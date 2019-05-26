@@ -1,0 +1,9 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP LD1117S33TR_WTAB
+D 800mA Fixed Low Drop Positive Voltage Regulator, Fixed Output 3.3V, SOT223
+K REGULATOR LDO 3.3V
+F http://www.st.com/st-web-ui/static/active/en/resource/technical/document/datasheet/CD00000544.pdf
+$ENDCMP
+#
+#End Doc Library
