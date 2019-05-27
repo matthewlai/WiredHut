@@ -1,4 +1,4 @@
-update=Sun 12 May 2019 15:59:36 BST
+update=27/05/2019 02:28:42
 version=1
 last_client=kicad
 [cvpcb]
@@ -22,8 +22,8 @@ ERC_TestSimilarLabels=1
 [pcbnew]
 version=1
 PageLayoutDescrFile=
-LastNetListRead=ostrich.net
-CopperLayerCount=4
+LastNetListRead=garden.net
+CopperLayerCount=2
 BoardThickness=1.6
 AllowMicroVias=0
 AllowBlindVias=0
@@ -71,19 +71,19 @@ OthersTextUpright=1
 SolderMaskClearance=0.2
 SolderMaskMinWidth=0
 SolderPasteClearance=0
-SolderPasteRatio=0
+SolderPasteRatio=-0
 [pcbnew/Layer.F.Cu]
 Name=F.Cu
-Type=0
-Enabled=1
-[pcbnew/Layer.In1.Cu]
-Name=GND
-Type=1
-Enabled=1
-[pcbnew/Layer.In2.Cu]
-Name=VDD
 Type=2
 Enabled=1
+[pcbnew/Layer.In1.Cu]
+Name=In1.Cu
+Type=0
+Enabled=0
+[pcbnew/Layer.In2.Cu]
+Name=In2.Cu
+Type=0
+Enabled=0
 [pcbnew/Layer.In3.Cu]
 Name=In3.Cu
 Type=0
@@ -198,7 +198,7 @@ Type=0
 Enabled=0
 [pcbnew/Layer.B.Cu]
 Name=B.Cu
-Type=0
+Type=2
 Enabled=1
 [pcbnew/Layer.B.Adhes]
 Enabled=0
@@ -229,7 +229,7 @@ Enabled=1
 [pcbnew/Layer.Margin]
 Enabled=1
 [pcbnew/Layer.B.CrtYd]
-Enabled=0
+Enabled=1
 [pcbnew/Layer.F.CrtYd]
 Enabled=1
 [pcbnew/Layer.B.Fab]

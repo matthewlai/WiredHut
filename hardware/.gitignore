@@ -1,0 +1,6 @@
+# Kicad caches and backup files.
+*.kicad_pcb-bak
+fp-info-cache
+*.bak
+*.net
+*-cache.lib
