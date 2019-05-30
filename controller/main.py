@@ -17,59 +17,56 @@ this program. If not, see <http://www.gnu.org/licenses/>.
 
 import calendar
 from datetime import datetime, timezone
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http_server import StartHTTPServers
 import time
-import threading
-import socket
-import socketserver
-import sys
 
 
-class Handler(BaseHTTPRequestHandler):
-  def do_GET(self):
-    if self.path != '/':
-      self.send_error(404, "Object not found")
-      return
-    self.send_response(200)
-    self.send_header('Content-type', 'text/html; charset=utf-8')
-    self.end_headers()
+# Credientials file should contain one line per user, with username and password
+# separated by ':'
+CREDENTIALS_FILE='credentials.txt'
 
-    i = 0
-    while True:
-      self.wfile.write("{} ".format(i).encode('utf-8'))
-      time.sleep(1)
-      i = i + 1
+
+def GetHTTPContent(path_elements, authenticated):
+  if len(path_elements) >= 1 and path_elements[0] == 'auth':
+    # Anything under auth/ is assumed to require authentication.
+    if not authenticated:
+      raise PermissionError()
+    path_elements = path_elements[1:]
+
+  if len(path_elements) == 0:
+    if authenticated:
+      return 'Logged in', None
+    else:
+      return 'Not logged in (<a href="/auth">login</a>)', None
+  else:
+    raise NameError()
 
 
 def utc_to_local(utc_time):
   return utc_time.replace(tzinfo=timezone.utc).astimezone(tz=None)
 
 
-class HTTPThread(threading.Thread):
-  def __init__(self, addr, sock, i):
-    threading.Thread.__init__(self)
-    self.addr = addr
-    self.sock = sock
-    self.i = i
-    self.daemon = True
-    self.start()
-
-  def run(self):
-    httpd = HTTPServer(self.addr, Handler, False)
-
-    httpd.socket = self.sock
-    httpd.server_bind = self.server_close = lambda self: None
-    httpd.serve_forever()
-
-
 def main():
-  addr = ('', 8000)
-  sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-  sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-  sock.bind(addr)
-  sock.listen(16)
+  credentials = []
 
-  [HTTPThread(addr, sock, i) for i in range(10)]
+  try:
+    with open('credentials.txt', 'r') as cred_file:
+      for line in cred_file:
+        if line.find(':') != -1:
+          user = line.split(':')[0]
+          password = line.split(':')[1]
+          credentials.append((user.strip('\n'), password.strip('\n')))
+  except:
+    print("Failed to read " + CREDENTIALS_FILE)
+    return
+
+  if len(credentials) == 0:
+    print("Failed to read any credential from " + CREDENTIALS_FILE)
+    return
+  else:
+    print("{} credentials read".format(len(credentials)))
+          
+  StartHTTPServers(port=8000, credentials=credentials, num_threads=16, content_fn=GetHTTPContent)
   time.sleep(10000)
 
 
