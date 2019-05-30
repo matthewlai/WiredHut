@@ -17,16 +17,21 @@ this program. If not, see <http://www.gnu.org/licenses/>.
 
 import calendar
 from datetime import datetime, timezone
-from http_server import StartHTTPServers
 import time
+
+from garden import GardenController
+from http_server import start_http_server
+from util import utc_to_local
 
 
 # Credientials file should contain one line per user, with username and password
 # separated by ':'
 CREDENTIALS_FILE='credentials.txt'
 
+GARDEN_CONTROLLER_ADDR_PORT=('localhost', 2938)
 
-def GetHTTPContent(path_elements, authenticated):
+
+def handle_http_get(path_elements, authenticated, delegation_map):
   if len(path_elements) >= 1 and path_elements[0] == 'auth':
     # Anything under auth/ is assumed to require authentication.
     if not authenticated:
@@ -34,19 +39,19 @@ def GetHTTPContent(path_elements, authenticated):
     path_elements = path_elements[1:]
 
   if len(path_elements) == 0:
+    # Show main page.
     if authenticated:
       return 'Logged in', None
     else:
       return 'Not logged in (<a href="/auth">login</a>)', None
+  elif path_elements[0] in delegation_map:
+    return delegation_map[path_elements[0]].handle_http_get(path_elements[1:],
+                                                            authenticated)
   else:
     raise NameError()
 
 
-def utc_to_local(utc_time):
-  return utc_time.replace(tzinfo=timezone.utc).astimezone(tz=None)
-
-
-def main():
+def read_credentials():
   credentials = []
 
   try:
@@ -64,9 +69,24 @@ def main():
     print("Failed to read any credential from " + CREDENTIALS_FILE)
     return
   else:
-    print("{} credentials read".format(len(credentials)))
+    print("{} credential(s) read".format(len(credentials)))
+
+  return credentials
+
+
+def main():
+  credentials = read_credentials()
+
+  garden_controller = GardenController(GARDEN_CONTROLLER_ADDR_PORT)
+
+  http_get_delegation_map = {
+    'garden': garden_controller
+  }
           
-  StartHTTPServers(port=8000, credentials=credentials, num_threads=16, content_fn=GetHTTPContent)
+  start_http_server(port=8000, credentials=credentials, num_threads=16,
+                    get_handler=lambda path_elements,
+                    authenticated: handle_http_get(path_elements, authenticated,
+                                                   http_get_delegation_map))
   time.sleep(10000)
 
 

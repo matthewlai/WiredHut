@@ -31,7 +31,8 @@ FAILED_ATTEMPTS_WINDOW = 300
 
 
 def encode_credential(credential):
-  return base64.b64encode((credential[0] + ':' + credential[1]).encode('utf-8')).decode('utf-8')
+  return base64.b64encode((credential[0] + ':' +
+      credential[1]).encode('utf-8')).decode('utf-8')
 
 
 class HTTPHandler(BaseHTTPRequestHandler):
@@ -39,13 +40,15 @@ class HTTPHandler(BaseHTTPRequestHandler):
   failed_auth_times = {}
   credentials = []
 
-  # We only have one content_fn, but we need to store it in a container to avoid binding.
-  content_fn = []
+  # We only have one get_handler, but we need to store it in a container to
+  # avoid binding.
+  get_handler = []
 
   def do_GET(self):
     client_ip = self.client_address[0]
     if self.is_banned(client_ip):
-      self.send_error(403, 'Forbidden', 'Too many failed authorization attempts')
+      self.send_error(403, 'Forbidden',
+                      'Too many failed authorization attempts')
       return
 
     try:
@@ -57,14 +60,15 @@ class HTTPHandler(BaseHTTPRequestHandler):
       authenticated = False
       if 'Authorization' in self.headers:
         for credential in self.credentials:
-          if self.headers['Authorization'] == ("Basic " + encode_credential(credential)):
+          if self.headers['Authorization'] == ("Basic " +
+              encode_credential(credential)):
             authenticated = True
             break
         if authenticated:
           self.handle_successful_auth(client_ip)
         else:
           self.handle_failed_auth(client_ip)
-      content, content_type = self.content_fn[0](path_elements, authenticated)
+      content, content_type = self.get_handler[0](path_elements, authenticated)
       if not content_type:
         content_type = 'text/html; charset=utf-8'
       try:
@@ -80,15 +84,18 @@ class HTTPHandler(BaseHTTPRequestHandler):
       self.send_header('WWW-Authenticate',
                        'Basic realm="Controller", charset="UTF-8"')
       self.end_headers()
-      self.wfile.write('Authorization required for function requested'.encode('utf-8'))
+      self.wfile.write(
+          'Authorization required for function requested'.encode('utf-8'))
       return
 
     protocol_version = 'HTTP/1.1'
 
-    if 'Accept-Encoding' in self.headers and 'gzip' in self.headers['Accept-Encoding']:
+    if ('Accept-Encoding' in self.headers and
+        'gzip' in self.headers['Accept-Encoding']):
       plain_size = len(content)
       content = gzip.compress(content)
-      self.log_message('Transferring %d bytes (%d bytes uncompressed)', len(content), plain_size)
+      self.log_message('Transferring %d bytes (%d bytes uncompressed)',
+                       len(content), plain_size)
       self.log_message('Content-Type: %s', content_type)
       compression_enabled = True
 
@@ -116,7 +123,8 @@ class HTTPHandler(BaseHTTPRequestHandler):
       if not ip in self.failed_auth_times:
         self.failed_auth_times[ip] = []
       self.failed_auth_times[ip].append(datetime.now().timestamp())
-      self.failed_auth_times[ip] = self.failed_auth_times[ip][-FAILED_ATTEMPTS_COUNT:]
+      self.failed_auth_times[ip] = \
+          self.failed_auth_times[ip][-FAILED_ATTEMPTS_COUNT:]
 
   def is_banned(self, ip):
     with self.auth_dict_lock:
@@ -125,7 +133,8 @@ class HTTPHandler(BaseHTTPRequestHandler):
         return False
 
       cutoff_time = datetime.now().timestamp() - FAILED_ATTEMPTS_WINDOW
-      # If any of the failed attempts were FAILED_ATTEMPTS_WINDOW before now, they are forgiven.
+      # If any of the failed attempts were FAILED_ATTEMPTS_WINDOW before now,
+      # they are forgiven.
       for failed_timestamp in self.failed_auth_times[ip]:
         if failed_timestamp < cutoff_time:
           return False
@@ -148,7 +157,7 @@ class HTTPThread(threading.Thread):
     httpd.serve_forever()
 
 
-def StartHTTPServers(port, credentials, num_threads, content_fn):
+def start_http_server(port, credentials, num_threads, get_handler):
   addr = ('', port)
   sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
   sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -156,7 +165,7 @@ def StartHTTPServers(port, credentials, num_threads, content_fn):
   sock.listen(num_threads)
 
   HTTPHandler.credentials = credentials
-  HTTPHandler.content_fn.append(content_fn)
+  HTTPHandler.get_handler.append(get_handler)
   http_threads = [HTTPThread(addr, sock) for _ in range(num_threads)]
   
 
