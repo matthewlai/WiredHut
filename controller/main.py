@@ -17,6 +17,7 @@ this program. If not, see <http://www.gnu.org/licenses/>.
 
 import calendar
 from datetime import datetime, timezone
+import logging
 import time
 
 from garden import GardenController
@@ -27,8 +28,6 @@ from util import utc_to_local
 # Credientials file should contain one line per user, with username and password
 # separated by ':'
 CREDENTIALS_FILE='credentials.txt'
-
-GARDEN_CONTROLLER_ADDR_PORT=('localhost', 2938)
 
 
 def handle_http_get(path_elements, authenticated, delegation_map):
@@ -75,9 +74,18 @@ def read_credentials():
 
 
 def main():
+  console = logging.StreamHandler()
+  console.setLevel(logging.DEBUG)
+
+  logging.basicConfig(
+    format=('[%(asctime)s.%(msecs)03d][%(levelname)s] %(name)s' + 
+            ' %(message)s (%(filename)s:%(lineno)d)'),
+    datefmt='%m/%d/%Y %H:%M:%S')
+  logging.debug("Hi")
+
   credentials = read_credentials()
 
-  garden_controller = GardenController(GARDEN_CONTROLLER_ADDR_PORT)
+  garden_controller = GardenController()
 
   http_get_delegation_map = {
     'garden': garden_controller

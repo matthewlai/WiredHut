@@ -30,35 +30,56 @@ import threading
 # SOIL_TEMPERATURE (soil temperature, 0.1C)
 
 # Commands:
-
 ### Watering
-### We include a duration to make sure we don't flood the garden if
-### communication fails while watering is in progress.
-# START_WATER <seconds>
-# STOP_WATER
+### Watering is normally controlled by the MCU firmware, but we include some
+### overrides here. They both have timeouts so if we lose communication we won't
+### flood the garden or starve the plants. Time is ignored for auto mode (but
+### still must be sent for easier parsing on the firmware side).
+# SET_MODE <AUTO/ON/OFF> <seconds>
 
-### Fallback
-### If we lose communication, we want the firmware to take over sensing and
-### watering. These functions set the algorithm parameters.
-# SET_FALLBACK_WATER_THRESHOLD <moisture %>
-# SET_FALLBACK_WATER_TIME <seconds>
-# SET_FALLBACK_MIN_TIME_BETWEEN_WATERING <seconds>
-# SET_FALLBACK_MAX_TIME_BETWEEN_WATERING <seconds>
-# SET_FALLBACK_MIN_WATER_LEVEL <mm>
+### These functions set auto-watering algorithm parameters.
+# SET_WATER_THRESHOLD <moisture %>
+# SET_WATER_TIME <seconds>
+# SET_MIN_TIME_BETWEEN_WATERING <seconds>
+# SET_MAX_TIME_BETWEEN_WATERING <seconds>
+# SET_MIN_WATER_LEVEL <mm>
 
+import logging
+from io import StringIO
+import socket
+import time
+
+from remote_handler import RemoteHandler
+
+PORT=2938
 
 class GardenController(threading.Thread):
-  def __init__(self, addr_port):
+  def __init__(self):
     threading.Thread.__init__(self)
-    self.addr_port = addr_port
+    self.daemon = True
+    self.logger = logging.getLogger('garden')
+    self.logger.setLevel(logging.DEBUG)
+    self.logger.info("Garden controller started")
+    self.remote_handler = RemoteHandler(
+      PORT,
+      lambda addr: self.handle_remote_connected(addr),
+      lambda line: self.handle_remote_receive(line),
+      lambda: self.handle_remote_disconnected())
     self.start()
 
   def run(self):
-    self.mcu_socket = (socket.AF_INET, socket.SOCK_STREAM)
-    self.mcu_socket.connect(self.addr_port)
-
     while True:
       time.sleep(1)
+
+  def handle_remote_connected(self, addr):
+    self.logger.info("Garden controller accepted connection from {}:{}".format(
+                     addr[0], addr[1]))
+
+  def handle_remote_receive(self, line):
+    self.logger.info("Garden controller received {}".format(line))
+
+  def handle_remote_disconnected(self):
+    self.logger.info("Garden controller remote controller disconnected")
 
   def handle_http_get(self, path_elements, authenticated):
     if len(path_elements) == 0:

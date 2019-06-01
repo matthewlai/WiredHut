@@ -25,56 +25,55 @@ this program. If not, see <http://www.gnu.org/licenses/>.
 # WATER_LEVEL (water level, mm)
 # SOIL_MOISTURE (soil moisture, %)
 # SOIL_TEMPERATURE (soil temperature, 0.1C)
+# WIFI_SIGNAL_STRENGTH ()
 
 # Commands:
-
 ### Watering
-### We include a duration to make sure we don't flood the garden if
-### communication fails while watering is in progress.
-# START_WATER <seconds>
-# STOP_WATER
+### Watering is normally controlled by the MCU firmware, but we include some
+### overrides here. They both have timeouts so if we lose communication we won't
+### flood the garden or starve the plants. Time is ignored for auto mode (but
+### still must be sent for easier parsing on the firmware side).
+# SET_MODE <AUTO/ON/OFF> <seconds>
 
-### Fallback
-### If we lose communication, we want the firmware to take over sensing and
-### watering. These functions set the algorithm parameters.
-# SET_FALLBACK_WATER_THRESHOLD <moisture %>
-# SET_FALLBACK_WATER_TIME <seconds>
-# SET_FALLBACK_MIN_TIME_BETWEEN_WATERING <seconds>
-# SET_FALLBACK_MAX_TIME_BETWEEN_WATERING <seconds>
-# SET_FALLBACK_MIN_WATER_LEVEL <mm>
+### These functions set auto-watering algorithm parameters.
+# SET_WATER_THRESHOLD <moisture %>
+# SET_WATER_TIME <seconds>
+# SET_MIN_TIME_BETWEEN_WATERING <seconds>
+# SET_MAX_TIME_BETWEEN_WATERING <seconds>
+# SET_MIN_WATER_LEVEL <mm>
 
 import math
 import socket
 import time
 
-ADDR_PORT=('', 2938)
+ADDR_PORT=('localhost', 2938)
 
 
 def SampleSine(min_val, max_val, period, t):
   dyn_range = max_val - min_val
-  return dyn_range / 2 * math.sin(t * 2 * math.PI / period) + min_val
+  return dyn_range / 2 * math.sin(t * 2 * math.pi / period) + min_val
 
 
 def SendVal(connection, var_name, val):
-  connection.send('{} {}\n'.format(var_name, val).encode('utf-8'))
-
-
-def listen():
-  connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-  connection.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-  connection.bind(ADDR_PORT)
-  connection.listen(10)
-  while True:
-    current_connection, address = connection.accept()
-    t = 0
-    while True:
-      SendVal(current_connection, 'SOL_V', SampleSine(15, 22, 5))
-      time.sleep(1)
-      t += 1
+  to_send = '{} {}\n'.format(var_name, val).encode('utf-8')
+  print(to_send)
+  connection.sendall(to_send)
 
 
 def main():
-  listen()
+  while True:
+    connection = socket.create_connection(ADDR_PORT, 10)
+
+    t = 0
+    while True:
+      SendVal(connection, 'SOL_V', SampleSine(15, 22, 5, t))
+      SendVal(connection, 'SOL_I', SampleSine(2, 20, 20, t))
+      SendVal(connection, 'BATT_V', SampleSine(11, 13, 3, t))
+      t += 1
+      time.sleep(1)
+
+    break
+
 
 
 if __name__ == '__main__':
