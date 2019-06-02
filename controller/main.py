@@ -50,6 +50,21 @@ def handle_http_get(path_elements, authenticated, delegation_map):
     raise NameError()
 
 
+def handle_http_post(path_elements, data, authenticated, delegation_map):
+  if len(path_elements) >= 1 and path_elements[0] == 'auth':
+    # Anything under auth/ is assumed to require authentication.
+    if not authenticated:
+      raise PermissionError()
+    path_elements = path_elements[1:]
+
+  if len(path_elements) > 0 and path_elements[0] in delegation_map:
+    return delegation_map[path_elements[0]].handle_http_post(path_elements[1:],
+                                                             data,
+                                                             authenticated)
+  else:
+    raise NameError()
+
+
 def read_credentials():
   credentials = []
 
@@ -87,14 +102,18 @@ def main():
 
   garden_controller = GardenController()
 
-  http_get_delegation_map = {
+  http_delegation_map = {
     'garden': garden_controller
   }
           
   start_http_server(port=8000, credentials=credentials, num_threads=16,
                     get_handler=lambda path_elements,
                     authenticated: handle_http_get(path_elements, authenticated,
-                                                   http_get_delegation_map))
+                                                   http_delegation_map),
+                    post_handler=lambda path_elements,
+                    authenticated: handle_http_post(
+                        path_elements, data, authenticated,
+                        http_delegation_map))
   time.sleep(10000)
 
 

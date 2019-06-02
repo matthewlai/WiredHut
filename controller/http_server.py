@@ -40,11 +40,12 @@ class HTTPHandler(BaseHTTPRequestHandler):
   failed_auth_times = {}
   credentials = []
 
-  # We only have one get_handler, but we need to store it in a container to
+  # We only have one *_handler, but we need to store it in a container to
   # avoid binding.
   get_handler = []
+  post_handler = []
 
-  def do_GET(self):
+  def handle_request(self):
     client_ip = self.client_address[0]
     if self.is_banned(client_ip):
       self.send_error(403, 'Forbidden',
@@ -68,7 +69,14 @@ class HTTPHandler(BaseHTTPRequestHandler):
           self.handle_successful_auth(client_ip)
         else:
           self.handle_failed_auth(client_ip)
-      content, content_type = self.get_handler[0](path_elements, authenticated)
+
+      if self.command == 'GET' or self.command == 'HEAD':
+        content, content_type = self.get_handler[0](path_elements,
+                                                    authenticated)
+      elif self.command == 'POST':
+        content, content_type = self.post_handler[0](path_elements,
+                                                     self.rfile.read(),
+                                                     authenticated)
       if not content_type:
         content_type = 'text/html; charset=utf-8'
       try:
@@ -89,6 +97,7 @@ class HTTPHandler(BaseHTTPRequestHandler):
       return
 
     protocol_version = 'HTTP/1.1'
+    compression_enabled = False
 
     if ('Accept-Encoding' in self.headers and
         'gzip' in self.headers['Accept-Encoding']):
@@ -108,10 +117,20 @@ class HTTPHandler(BaseHTTPRequestHandler):
 
     self.end_headers()
 
-    try:        
-      self.wfile.write(content)
-    except BrokenPipeError:
-      print('Connection closed')
+    if self.command != 'HEAD':
+      try:
+        self.wfile.write(content)
+      except BrokenPipeError:
+        self.log_message('Connection closed')
+
+  def do_GET(self):
+    self.handle_request()
+
+  def do_HEAD(self):
+    self.handle_request()
+
+  def do_POST(self):
+    self.handle_request()
 
   def handle_successful_auth(self, ip):
     with self.auth_dict_lock:
@@ -157,7 +176,8 @@ class HTTPThread(threading.Thread):
     httpd.serve_forever()
 
 
-def start_http_server(port, credentials, num_threads, get_handler):
+def start_http_server(port, credentials, num_threads, get_handler,
+                      post_handler):
   addr = ('', port)
   sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
   sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -166,6 +186,7 @@ def start_http_server(port, credentials, num_threads, get_handler):
 
   HTTPHandler.credentials = credentials
   HTTPHandler.get_handler.append(get_handler)
+  HTTPHandler.post_handler.append(post_handler)
   http_threads = [HTTPThread(addr, sock) for _ in range(num_threads)]
   
 

@@ -83,6 +83,34 @@ class GardenController(threading.Thread):
 
   def handle_http_get(self, path_elements, authenticated):
     if len(path_elements) == 0:
-      return "Garden main", None
+      return main_page(), None
     else:
       raise NameError()
+
+  def handle_http_post(self, path_elements, data, authenticated):
+    self.logger.info("Handling post")
+    # All POST require authentication
+    if not authenticated:
+      raise PermissionError()
+    if len(path_elements) == 1 and path_elements[0] == 'send_remote':
+      self.logger.info("Received {}".format(data))
+      return main_page(), None
+    else:
+      raise NameError()
+
+
+def main_page():
+  return """<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Garden</title>
+  </head>
+  <body>
+    <form action="/auth/garden/send_remote" method="post">
+    Command: <input type="text" name="command"><br>
+    <input type="submit" value="Send">
+    </form>
+  </body>
+</html>
+"""

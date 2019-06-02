@@ -63,18 +63,28 @@ def SendVal(connection, var_name, val):
 def main():
   while True:
     connection = socket.create_connection(ADDR_PORT, 10)
+    connection.settimeout(0.05)
 
     t = 0
     while True:
+      try:
+        recv_data = None
+        recv_data = connection.recv(4096)
+        if recv_data:
+          print("Received: {}".format(recv_data.decode('utf-8')))
+        else:
+          # Connection closed normally.
+          break
+      except socket.timeout:
+        pass
+      except:
+        # Connection closed not so normally.
+        break
       SendVal(connection, 'SOL_V', SampleSine(15, 22, 5, t))
       SendVal(connection, 'SOL_I', SampleSine(2, 20, 20, t))
       SendVal(connection, 'BATT_V', SampleSine(11, 13, 3, t))
       t += 1
       time.sleep(1)
-
-    break
-
-
 
 if __name__ == '__main__':
   main()
