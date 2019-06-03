@@ -25,7 +25,7 @@ this program. If not, see <http://www.gnu.org/licenses/>.
 # WATER_LEVEL (water level, mm)
 # SOIL_MOISTURE (soil moisture, %)
 # SOIL_TEMPERATURE (soil temperature, 0.1C)
-# WIFI_SIGNAL_STRENGTH ()
+# WIFI_SIGNAL_STRENGTH (dBm)
 
 # Commands:
 ### Watering

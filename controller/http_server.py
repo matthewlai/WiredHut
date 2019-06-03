@@ -19,15 +19,19 @@ import base64
 from datetime import datetime
 import gzip
 from http.server import BaseHTTPRequestHandler, HTTPServer
-import time
-import threading
 import socket
 import socketserver
+import time
+import threading
+from urllib import parse
 
 # The user is banned if they attempted FAILED_ATTEMPTS_COUNTS failed
 # authorizations in the past FAILED_ATTEMPTS_WINDOW seconds.
 FAILED_ATTEMPTS_COUNT = 3
 FAILED_ATTEMPTS_WINDOW = 300
+
+# Files with these extensions are assumed to be cacheable
+CACHEABLE_EXTS = ['jpg', 'png']
 
 
 def encode_credential(credential):
@@ -54,7 +58,10 @@ class HTTPHandler(BaseHTTPRequestHandler):
 
     try:
       path_elements = []
-      for component in self.path.split('/'):
+      path_without_query = self.path
+      if path_without_query.find('?') >= 0:
+        path_without_query = path_without_query.split('?')[0]
+      for component in path_without_query.split('/'):
         if len(component) > 0:
           path_elements.append(component)
 
@@ -71,11 +78,20 @@ class HTTPHandler(BaseHTTPRequestHandler):
           self.handle_failed_auth(client_ip)
 
       if self.command == 'GET' or self.command == 'HEAD':
-        content, content_type = self.get_handler[0](path_elements,
+        query_vars = {}
+        if self.path.find('?') >= 0:
+          query_vars = parse.parse_qs(self.path.split('?')[1])
+        content, content_type = self.get_handler[0](path_elements, query_vars,
                                                     authenticated)
       elif self.command == 'POST':
-        content, content_type = self.post_handler[0](path_elements,
-                                                     self.rfile.read(),
+        if ('Content-Type' not in self.headers or
+            self.headers['Content-Type'] != 'application/x-www-form-urlencoded'):
+          self.send_error(415, 'Unsupported Media Type',
+                          'Unsupported Content-Type')
+          return
+        read_len = int(self.headers['Content-Length'])
+        data = parse.parse_qs(self.rfile.read(read_len).decode('utf-8'))
+        content, content_type = self.post_handler[0](path_elements, data,
                                                      authenticated)
       if not content_type:
         content_type = 'text/html; charset=utf-8'
@@ -97,23 +113,25 @@ class HTTPHandler(BaseHTTPRequestHandler):
       return
 
     protocol_version = 'HTTP/1.1'
-    compression_enabled = False
 
-    if ('Accept-Encoding' in self.headers and
+    self.send_response(200)
+
+    if (len(content) > 100 and 'Accept-Encoding' in self.headers and
         'gzip' in self.headers['Accept-Encoding']):
       plain_size = len(content)
       content = gzip.compress(content)
       self.log_message('Transferring %d bytes (%d bytes uncompressed)',
                        len(content), plain_size)
-      self.log_message('Content-Type: %s', content_type)
-      compression_enabled = True
+      self.send_header('Content-Encoding', 'gzip')
+    else:
+      self.log_message('Transferring %d bytes', len(content))
 
-    self.send_response(200)
     self.send_header('Content-Type', content_type)
     self.send_header('Content-Length', str(len(content)))
 
-    if compression_enabled:      
-      self.send_header('Content-Encoding', 'gzip')
+    if len(path_elements) > 0 and path_elements[-1].find('.') >= 0:
+      if path_elements[-1].split('.')[-1] in CACHEABLE_EXTS:
+        self.send_header('Cache-Control', 'public,max-age=86400')
 
     self.end_headers()
 

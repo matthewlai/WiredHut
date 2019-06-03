@@ -22,6 +22,8 @@ import time
 
 from garden import GardenController
 from http_server import start_http_server
+from indoor import IndoorController
+from static_server import StaticServer
 from util import utc_to_local
 
 
@@ -30,33 +32,18 @@ from util import utc_to_local
 CREDENTIALS_FILE='credentials.txt'
 
 
-def handle_http_get(path_elements, authenticated, delegation_map):
-  if len(path_elements) >= 1 and path_elements[0] == 'auth':
-    # Anything under auth/ is assumed to require authentication.
-    if not authenticated:
-      raise PermissionError()
-    path_elements = path_elements[1:]
-
+def handle_http_get(path_elements, query_vars, authenticated, delegation_map):
   if len(path_elements) == 0:
-    # Show main page.
-    if authenticated:
-      return 'Logged in', None
-    else:
-      return 'Not logged in (<a href="/auth">login</a>)', None
+    return main_page(delegation_map), None
   elif path_elements[0] in delegation_map:
     return delegation_map[path_elements[0]].handle_http_get(path_elements[1:],
+                                                            query_vars,
                                                             authenticated)
   else:
     raise NameError()
 
 
 def handle_http_post(path_elements, data, authenticated, delegation_map):
-  if len(path_elements) >= 1 and path_elements[0] == 'auth':
-    # Anything under auth/ is assumed to require authentication.
-    if not authenticated:
-      raise PermissionError()
-    path_elements = path_elements[1:]
-
   if len(path_elements) > 0 and path_elements[0] in delegation_map:
     return delegation_map[path_elements[0]].handle_http_post(path_elements[1:],
                                                              data,
@@ -88,6 +75,31 @@ def read_credentials():
   return credentials
 
 
+def main_page(delegation_map):
+  template = """<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="/static/ajax.js"></script>
+    <title>WiredHut</title>
+  </head>
+  <body>
+    {content}
+  </body>
+</html>
+"""
+  content = ''
+  for delegate in delegation_map.values():
+    if not hasattr(delegate, 'main_section_name'):
+      continue
+    content += '<div class="section-container"><h2>{name}</h2><div class="content-section">{section_content}</div></div>'.format(
+        name=delegate.main_section_name(),
+        section_content=delegate.main_section_content())
+
+  return template.format(content=content)
+
+
 def main():
   console = logging.StreamHandler()
   console.setLevel(logging.DEBUG)
@@ -96,21 +108,26 @@ def main():
     format=('[%(asctime)s.%(msecs)03d][%(levelname)s] %(name)s' + 
             ' %(message)s (%(filename)s:%(lineno)d)'),
     datefmt='%m/%d/%Y %H:%M:%S')
-  logging.debug("Hi")
 
   credentials = read_credentials()
 
   garden_controller = GardenController()
+  indoor_controller = IndoorController()
+
+  static_server = StaticServer()
 
   http_delegation_map = {
-    'garden': garden_controller
+    'garden': garden_controller,
+    'indoor': indoor_controller,
+    'static': static_server
   }
           
   start_http_server(port=8000, credentials=credentials, num_threads=16,
-                    get_handler=lambda path_elements,
-                    authenticated: handle_http_get(path_elements, authenticated,
+                    get_handler=lambda path_elements, query_vars,
+                    authenticated: handle_http_get(path_elements, query_vars,
+                                                   authenticated,
                                                    http_delegation_map),
-                    post_handler=lambda path_elements,
+                    post_handler=lambda path_elements, data,
                     authenticated: handle_http_post(
                         path_elements, data, authenticated,
                         http_delegation_map))

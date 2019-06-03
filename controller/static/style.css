@@ -1,0 +1,14 @@
+body {
+  font-family: Tahoma, Geneva, sans-serif;
+  background-color: #CCCCCC;
+}
+
+div.section-container {
+}
+
+div.content-section {
+  background-color: white;
+  border-radius: 15px;
+  border: 2px solid #999999;
+  padding: 10px;
+}
