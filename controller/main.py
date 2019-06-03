@@ -35,6 +35,12 @@ CREDENTIALS_FILE='credentials.txt'
 def handle_http_get(path_elements, query_vars, authenticated, delegation_map):
   if len(path_elements) == 0:
     return main_page(delegation_map), None
+  elif path_elements[0] == 'aggregated_updates':
+    updates = []
+    for delegate in delegation_map.values():
+      if hasattr(delegate, 'append_updates'):
+        delegate.append_updates(updates)
+    return '\n'.join(updates), None
   elif path_elements[0] in delegation_map:
     return delegation_map[path_elements[0]].handle_http_get(path_elements[1:],
                                                             query_vars,

@@ -28,6 +28,8 @@ from remote_handler import RemoteHandler
 
 PORT=2939
 
+LOCATIONS=["Bedroom"]
+
 class IndoorController():
   def __init__(self):
     self.logger = logging.getLogger('indoor')
@@ -40,8 +42,14 @@ class IndoorController():
       lambda: self.handle_remote_disconnected())
 
     # Measurements
-    self.temperature = DynamicVar("Temperature", "TEMP", "/indoor/temperature", "C")
-    self.humidity = DynamicVar("Humidity", "HUMIDITY", "/indoor/humidity", "%")
+    self.temperatures = {}
+    self.humidities = {}
+
+    for location in LOCATIONS:
+      self.temperatures[location] = DynamicVar("Temperature",
+          "indoor_temp_{}".format(location), format_str='{0:.2f}°C')
+      self.humidities[location] = DynamicVar("Humidity",
+          "indoor_hum_{}".format(location), format_str='{0:.2f}%')
 
   def handle_remote_connected(self, addr):
     self.logger.info("Accepted connection from {}:{}".format(
@@ -56,22 +64,15 @@ class IndoorController():
     measurement = parts[1]
     location = parts[2]
     if measurement_type == 'TEMP':
-      self.temperature.update(float(measurement) / 100)
+      self.temperatures[location].update(float(measurement) / 100)
     elif measurement_type == 'HUMIDITY':
-      self.humidity.update(float(measurement) / 10)
+      self.humidities[location].update(float(measurement) / 10)
 
   def handle_remote_disconnected(self):
     self.logger.info("Remote controller disconnected")
 
   def handle_http_get(self, path_elements, query_vars, authenticated):
-    if len(path_elements) < 1:
-      raise NameError()
-    elif path_elements[0] == 'temperature':
-      return self.temperature.get_value_str(), None
-    elif path_elements[0] == 'humidity':
-      return self.humidity.get_value_str(), None
-    else:
-      raise NameError()
+    raise NameError()
 
   def handle_http_post(self, path_elements, data, authenticated):
     # No POST requests supported.
@@ -82,6 +83,13 @@ class IndoorController():
 
   def main_section_content(self):
     ret = ''
-    ret += self.temperature.display_html()
-    ret += self.humidity.display_html()
+    for location in LOCATIONS:
+      ret += '<h3>{}</h3>'.format(location)
+      ret += self.temperatures[location].display_html()
+      ret += self.humidities[location].display_html()
     return ret
+
+  def append_updates(self, updates):
+    for location in LOCATIONS:
+      self.temperatures[location].append_update(updates)
+      self.humidities[location].append_update(updates)

@@ -89,3 +89,6 @@ class GardenController():
 
   def main_section_content(self):
     return 'Garden content'
+
+  def append_updates(self, updates):
+    pass

@@ -18,14 +18,12 @@ this program. If not, see <http://www.gnu.org/licenses/>.
 import threading
 
 class DynamicVar():
-  def __init__(self, display_name, internal_name, load_path, unit, decimal_places = 3):
+  # Internal name must be unique
+  def __init__(self, display_name, internal_name, format_str = '{}'):
     self.lock = threading.Lock()
     self.display_name = display_name
     self.internal_name = internal_name
-    self.load_path = load_path
-    self.unit = unit
-    self.decimal_places = decimal_places
-    self.value = 'invalid'
+    self.format_str = format_str
 
   def update(self, new_value):
     with self.lock:
@@ -33,17 +31,25 @@ class DynamicVar():
 
   def get_value(self):
     with self.lock:
-      return self.value
+      if hasattr(self, 'value'):
+        return self.value
+      else:
+        return 'No value'
 
   def get_value_str(self):
     with self.lock:
-      return ('{:.' + str(self.decimal_places) + 'f}').format(self.value)
+      if hasattr(self, 'value'):
+        return self.format_str.format(self.value)
+      else:
+        return 'No value'
+
+  def append_update(self, updates):
+    updates.append('update_field_by_id("{internal_name}_display_span", "{value_str}");'.format(
+        internal_name=self.internal_name, value_str=self.get_value_str()))
 
   def display_html(self):
     ret = ''
     value = self.get_value()
-    ret += '<script>load_val("{load_path}", "{internal_name}_display_span", 1);</script>'.format(
-        load_path=self.load_path, internal_name = self.internal_name)
-    ret += '<p>{display_name}: <span id="{internal_name}_display_span">No val</span>{unit}</p>'.format(
-        display_name=self.display_name, internal_name=self.internal_name, unit=self.unit)
+    ret += '<p>{display_name}: <span id="{internal_name}_display_span">No value</span></p>'.format(
+        display_name=self.display_name, internal_name=self.internal_name)
     return ret

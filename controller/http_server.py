@@ -85,7 +85,8 @@ class HTTPHandler(BaseHTTPRequestHandler):
                                                     authenticated)
       elif self.command == 'POST':
         if ('Content-Type' not in self.headers or
-            self.headers['Content-Type'] != 'application/x-www-form-urlencoded'):
+            self.headers['Content-Type'] !=
+                'application/x-www-form-urlencoded'):
           self.send_error(415, 'Unsupported Media Type',
                           'Unsupported Content-Type')
           return
@@ -100,8 +101,8 @@ class HTTPHandler(BaseHTTPRequestHandler):
       except AttributeError:
         # We probably already have a byte array.
         pass
-    except NameError:
-      self.send_error(404, 'Object not found')
+    except NameError as e:
+      self.send_error(404, 'Object not found', str(e))
       return
     except PermissionError:
       self.send_response(401)
