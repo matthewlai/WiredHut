@@ -15,6 +15,7 @@ You should have received a copy of the GNU General Public License along with
 this program. If not, see <http://www.gnu.org/licenses/>.
 """
 
+from collections import namedtuple
 import logging
 import time
 import threading
@@ -28,7 +29,13 @@ from remote_handler import RemoteHandler
 
 PORT=2939
 
-LOCATIONS=["Bedroom"]
+LocationInfo = namedtuple('LocationInfo', ['display_name', 'has_temp',
+                                           'has_hum'])
+
+LOCATIONS={
+  'indoor': LocationInfo(display_name='Indoor', has_temp=True, has_hum=True),
+  'garden_mcu': LocationInfo(display_name='Garden MCU', has_temp=True, has_hum=False)
+}
 
 class IndoorController():
   def __init__(self):
@@ -38,37 +45,45 @@ class IndoorController():
     self.remote_handler = RemoteHandler(
       PORT,
       lambda addr: self.handle_remote_connected(addr),
-      lambda line: self.handle_remote_receive(line),
-      lambda: self.handle_remote_disconnected())
+      lambda addr, line: self.handle_remote_receive(addr, line),
+      lambda addr: self.handle_remote_disconnected(addr))
 
     # Measurements
     self.temperatures = {}
     self.humidities = {}
 
-    for location in LOCATIONS:
-      self.temperatures[location] = DynamicVar("Temperature",
-          "indoor_temp_{}".format(location), format_str='{0:.2f}°C')
-      self.humidities[location] = DynamicVar("Humidity",
-          "indoor_hum_{}".format(location), format_str='{0:.2f}%')
+    for location, info in LOCATIONS.items():
+      if info.has_temp:
+        self.temperatures[location] = DynamicVar("Temperature",
+            "indoor_temp_{}".format(location), format_str='{0:.2f}°C')
+      if info.has_hum:
+        self.humidities[location] = DynamicVar("Humidity",
+            "indoor_hum_{}".format(location), format_str='{0:.2f}%')
 
   def handle_remote_connected(self, addr):
     self.logger.info("Accepted connection from {}:{}".format(
                      addr[0], addr[1]))
 
-  def handle_remote_receive(self, line):
+  def handle_remote_receive(self, addr, line):
     self.logger.debug("Received from remote controller: {}".format(line))
     parts = line.split(' ')
     if len(parts) != 3:
       self.logger.error("Invalid measurement from remote MCU: {}".format(line))
+      return
     measurement_type = parts[0]
     measurement = parts[1]
     location = parts[2]
-    if measurement_type == 'TEMP':
+    if not location in LOCATIONS:
+      self.logger.error("Received environment update from unknown location: {}".format(location))
+      return
+    if measurement_type == 'TEMP' and LOCATIONS[location].has_temp:
       self.temperatures[location].update(float(measurement) / 100)
-    elif measurement_type == 'HUMIDITY':
+    elif measurement_type == 'HUMIDITY' and LOCATIONS[location].has_hum:
       self.humidities[location].update(float(measurement) / 10)
+    else:
+      self.logger.error("Received environment update with unknown field: {}".format(measurement_type))
 
-  def handle_remote_disconnected(self):
+  def handle_remote_disconnected(self, addr):
     self.logger.info("Remote controller disconnected")
 
   def handle_http_get(self, path_elements, query_vars, authenticated):
@@ -79,17 +94,21 @@ class IndoorController():
     raise NameError()
 
   def main_section_name(self):
-    return 'Indoor Environment'
+    return 'Environment'
 
   def main_section_content(self):
     ret = ''
-    for location in LOCATIONS:
-      ret += '<h3>{}</h3>'.format(location)
-      ret += self.temperatures[location].display_html()
-      ret += self.humidities[location].display_html()
+    for location, info in LOCATIONS.items():
+      ret += '<h3>{}</h3>'.format(info.display_name)
+      if info.has_temp:
+        ret += self.temperatures[location].display_html()
+      if info.has_hum:
+        ret += self.humidities[location].display_html()
     return ret
 
   def append_updates(self, updates):
-    for location in LOCATIONS:
-      self.temperatures[location].append_update(updates)
-      self.humidities[location].append_update(updates)
+    for location, info in LOCATIONS.items():
+      if info.has_temp:
+        self.temperatures[location].append_update(updates)
+      if info.has_hum:
+        self.humidities[location].append_update(updates)

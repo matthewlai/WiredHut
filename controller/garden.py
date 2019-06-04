@@ -27,6 +27,7 @@ from remote_handler import RemoteHandler
 # BATT_V (battery voltage, millivolts)
 # BATT_I (battery current, milliamps, discharge is negative)
 # LOAD_I (total load current, milliamps)
+# PUMP_ON (whether pump is on, 1/0)
 # PUMP_I (pump current, milliamps)
 # WATER_LEVEL (water level, mm)
 # SOIL_MOISTURE (soil moisture, %)
@@ -58,17 +59,17 @@ class GardenController():
     self.remote_handler = RemoteHandler(
       PORT,
       lambda addr: self.handle_remote_connected(addr),
-      lambda line: self.handle_remote_receive(line),
-      lambda: self.handle_remote_disconnected())
+      lambda addr, line: self.handle_remote_receive(addr, line),
+      lambda addr: self.handle_remote_disconnected(addr))
 
   def handle_remote_connected(self, addr):
     self.logger.info("Accepted connection from {}:{}".format(
                      addr[0], addr[1]))
 
-  def handle_remote_receive(self, line):
+  def handle_remote_receive(self, addr, line):
     self.logger.debug("Received from remote controller: {}".format(line))
 
-  def handle_remote_disconnected(self):
+  def handle_remote_disconnected(self, addr):
     self.logger.info("Remote controller disconnected")
 
   def handle_http_get(self, path_elements, query_vars, authenticated):

@@ -58,8 +58,8 @@ def main():
         except:
           # Connection closed not so normally.
           break
-        SendVal(connection, 'TEMP', SampleSine(2000, 2500, 5, t), 'Bedroom')
-        SendVal(connection, 'HUMIDITY', SampleSine(500, 1000, 3, t), 'Bedroom')
+        SendVal(connection, 'TEMP', SampleSine(2000, 2500, 5, t), 'indoor')
+        SendVal(connection, 'HUMIDITY', SampleSine(500, 1000, 3, t), 'indoor')
         t += 1
         time.sleep(1)
     except ConnectionRefusedError:
