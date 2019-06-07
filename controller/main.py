@@ -18,8 +18,10 @@ this program. If not, see <http://www.gnu.org/licenses/>.
 import calendar
 from datetime import datetime, timezone
 import logging
+import sqlite3
 import time
 
+from dynamic_var import DynamicVar
 from garden import GardenController
 from http_server import start_http_server
 from indoor import IndoorController
@@ -30,6 +32,8 @@ from util import utc_to_local
 # Credientials file should contain one line per user, with username and password
 # separated by ':'
 CREDENTIALS_FILE='credentials.txt'
+
+SQLITE_FILE='record.db'
 
 
 def handle_http_get(path_elements, query_vars, authenticated, delegation_map):
@@ -108,7 +112,7 @@ def main_page(delegation_map):
 
 def main():
   console = logging.StreamHandler()
-  console.setLevel(logging.DEBUG)
+  console.setLevel(logging.INFO)
 
   logging.basicConfig(
     format=('[%(asctime)s.%(msecs)03d][%(levelname)s] %(name)s' + 
@@ -137,8 +141,58 @@ def main():
                     authenticated: handle_http_post(
                         path_elements, data, authenticated,
                         http_delegation_map))
-  time.sleep(10000)
 
+  timestamp_start = DynamicVar("Timestamp Start (ms)", "timestamp_start_ms")
+  timestamp_end = DynamicVar("Timestamp End (ms)", "timestamp_end_ms")
+
+  db = sqlite3.connect(SQLITE_FILE)
+  db.execute("PRAGMA synchronous = OFF")
+
+  variables = []
+  for service in http_delegation_map.values():
+    if hasattr(service, 'append_all_variables'):
+      service.append_all_variables(variables)
+
+  create_string = ','.join(['{} {}'.format(
+      var.get_internal_name(), var.get_sql_type()) for var in variables])
+
+  # Try to create a new table. This will fail if the table already exists, and
+  # that is fine.
+  create_statement = '''CREATE TABLE data1s ({})'''.format(create_string)
+  try:
+    db.execute(create_statement)
+  except sqlite3.OperationalError:
+    pass
+
+  # Insert any new variable since last time.
+  existing_columns = set(
+      map(lambda x: x[0], db.execute('SELECT * from data1s').description))
+
+  for var in variables:
+    if var.get_internal_name() not in existing_columns:
+      print('''ALTER TABLE data1s ADD {} {};'''.format(
+          var.get_internal_name(), var.get_sql_type()))
+      db.execute('''ALTER TABLE data1s ADD {} {};'''.format(
+          var.get_internal_name(), var.get_sql_type()))
+
+  variable_names = [var.get_internal_name() for var in variables]
+
+  while True:
+    timestamp_start.update(int(time.time() * 1000))
+    time.sleep(1)
+    timestamp_end.update(int(time.time() * 1000))
+    values = []
+
+    for var in variables:
+      if (var.has_value()):
+        values.append(var.get_value())
+      else:
+        values.append(None)
+    
+    statement = '''INSERT INTO data1s ({}) VALUES ({});'''.format(
+        ','.join(variable_names), ','.join('?' for _ in values))
+    db.execute(statement, values)
+    db.commit()
 
 if __name__ == '__main__':
   main()

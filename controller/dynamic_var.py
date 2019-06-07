@@ -19,11 +19,20 @@ import threading
 
 class DynamicVar():
   # Internal name must be unique
-  def __init__(self, display_name, internal_name, format_str = '{}'):
+  def __init__(self, display_name, internal_name, dtype=float, format_str = '{}'):
     self.lock = threading.Lock()
     self.display_name = display_name
     self.internal_name = internal_name
     self.format_str = format_str
+    if dtype is float:
+      self.sql_type = 'REAL'
+    elif dtype is str:
+      self.sql_type = 'TEXT'
+    elif dtype is int:
+      self.sql_type = 'INTEGER'
+    else:
+      print('Unknown dtype: {}'.format(dtype))
+      self.sql_type = 'TEXT'
 
   def update(self, new_value):
     with self.lock:
@@ -36,12 +45,22 @@ class DynamicVar():
       else:
         return 'No value'
 
+  def get_sql_type(self):
+    return self.sql_type
+
+  def has_value(self):
+    with self.lock:
+      return hasattr(self, 'value')
+
   def get_value_str(self):
     with self.lock:
       if hasattr(self, 'value'):
         return self.format_str.format(self.value)
       else:
         return 'No value'
+
+  def get_internal_name(self):
+    return self.internal_name
 
   def append_update(self, updates):
     updates.append('update_field_by_id("{internal_name}_display_span", "{value_str}");'.format(
@@ -53,3 +72,6 @@ class DynamicVar():
     ret += '<p>{display_name}: <span id="{internal_name}_display_span">No value</span></p>'.format(
         display_name=self.display_name, internal_name=self.internal_name)
     return ret
+
+  def get_display_name(self):
+    return self.display_name

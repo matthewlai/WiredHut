@@ -19,11 +19,15 @@ import logging
 from io import StringIO
 import time
 
+from dynamic_var import DynamicVar
 from remote_handler import RemoteHandler
 
 # Parameter list (sent periodically from MCU):
 # SOL_V (solar voltage, millivolts)
 # SOL_I (solar current, milliamps)
+# SOL_MODE (solar mode, OFF/FAULT/BULK/ABSORPTION/FLOAT)
+# MPPT_MODE (mppt algorithm mode, OFF/CVCI/MPPT)
+# SOL_ERR (solar error code)
 # BATT_V (battery voltage, millivolts)
 # BATT_I (battery current, milliamps, discharge is negative)
 # LOAD_I (total load current, milliamps)
@@ -31,8 +35,6 @@ from remote_handler import RemoteHandler
 # PUMP_I (pump current, milliamps)
 # WATER_LEVEL (water level, mm)
 # SOIL_MOISTURE (soil moisture, %)
-# SOIL_TEMPERATURE (soil temperature, 0.1C)
-# WIFI_SIGNAL_STRENGTH (dBm)
 
 # Commands:
 ### Watering
@@ -43,13 +45,14 @@ from remote_handler import RemoteHandler
 # SET_MODE <AUTO/ON/OFF> <seconds>
 
 ### These functions set auto-watering algorithm parameters.
-# SET_WATER_THRESHOLD <moisture %>
 # SET_WATER_TIME <seconds>
-# SET_MIN_TIME_BETWEEN_WATERING <seconds>
-# SET_MAX_TIME_BETWEEN_WATERING <seconds>
+# SET_TIME_BETWEEN_WATERING <seconds>
 # SET_MIN_WATER_LEVEL <mm>
+# SET_FORCE_STATE <state> <seconds> (state = "0, 1")
 
 PORT=2938
+
+WATER_LEVEL_L_PER_MM=0.55
 
 class GardenController():
   def __init__(self):
@@ -61,6 +64,33 @@ class GardenController():
       lambda addr: self.handle_remote_connected(addr),
       lambda addr, line: self.handle_remote_receive(addr, line),
       lambda addr: self.handle_remote_disconnected(addr))
+    self.sol_v = DynamicVar(
+        "Solar Voltage", "garden_solar_voltage", format_str='{0:.3f}V')
+    self.sol_i = DynamicVar(
+        "Solar Current", "garden_solar_current", format_str='{0:.3f}A')
+    self.sol_p = DynamicVar(
+        "Solar Power", "garden_solar_power", format_str='{0:.1f}W')
+    self.sol_mode = DynamicVar("Solar Mode", "garden_solar_mode", dtype=str)
+    self.mppt_mode = DynamicVar("Solar MPPT Mode", "garden_mppt_mode", dtype=str)
+    self.sol_err = DynamicVar("Solar Error", "garden_solar_error", dtype=int)
+    self.batt_v = DynamicVar("Battery Voltage", "garden_battery_voltage", format_str='{0:.3f}V')
+    self.batt_i = DynamicVar("Battery Current", "garden_battery_current", format_str='{0:.3f}A')
+    self.soc = DynamicVar("Battery State of Charge", "garden_soc", format_str='{0:.1f}mAh')
+    self.load_i = DynamicVar("Load Current", "garden_load_current", format_str='{0:.3f}A')
+    self.pump_on = DynamicVar("Pump On", "garden_pump_on", dtype=int)
+    self.pump_i = DynamicVar("Pump Current", "garden_pump_current", format_str='{0:.3f}A')
+    self.water_level = DynamicVar("Water Level", "garden_water_level", format_str='{0:.1f}L')
+    self.soil_moisture = DynamicVar("Soil Moisture", "garden_soil_moisture", format_str='{0:.1f}%')
+    self.water_time = DynamicVar("Watering_time", "garden_water_time", format_str='{}s', dtype=int)
+    self.time_between_watering = DynamicVar("Time between watering", "garden_time_between_watering", format_str='{}s', dtype=int)
+    self.force_state = DynamicVar("State Forced", "garden_force_state", dtype=int)
+    self.uptime = DynamicVar("MCU Uptime", "garden_mcu_uptime", format_str='{}s', dtype=int)
+
+    self.vars = [self.sol_v, self.sol_i, self.sol_p, self.sol_mode,
+                 self.mppt_mode, self.sol_err, self.batt_v, self.batt_i,
+                 self.load_i, self.pump_on, self.pump_i, self.water_level,
+                 self.soil_moisture, self.uptime, self.soc, self.water_time,
+                 self.time_between_watering, self.force_state]
 
   def handle_remote_connected(self, addr):
     self.logger.info("Accepted connection from {}:{}".format(
@@ -68,6 +98,52 @@ class GardenController():
 
   def handle_remote_receive(self, addr, line):
     self.logger.debug("Received from remote controller: {}".format(line))
+    parts = line.split(' ')
+    if len(parts) != 2:
+      self.logger.error("Invalid measurement from remote MCU: {}".format(line))
+      return
+    value_type = parts[0]
+    value = parts[1]
+    if value_type == 'SOL_V':
+      self.sol_v.update(float(value) / 1000)
+      if self.sol_i.has_value():
+        self.sol_p.update(float(value) / 1000 * self.sol_i.get_value())
+    elif value_type == 'SOL_I':
+      self.sol_i.update(float(value) / 1000)
+      if self.sol_v.has_value():
+        self.sol_p.update(float(value) / 1000 * self.sol_v.get_value())
+    elif value_type == 'SOL_MODE':
+      self.sol_mode.update(value)
+    elif value_type == 'MPPT_MODE':
+      self.mppt_mode.update(value)
+    elif value_type == 'SOL_ERR':
+      self.sol_err.update(value)
+    elif value_type == 'BATT_V':
+      self.batt_v.update(float(value) / 1000)
+    elif value_type == 'BATT_I':
+      self.batt_i.update(float(value) / 1000)
+    elif value_type == 'LOAD_I':
+      self.load_i.update(float(value) / 1000)
+    elif value_type == 'PUMP_ON':
+      self.pump_on.update(value)
+    elif value_type == 'PUMP_I':
+      self.pump_i.update(float(value) / 1000)
+    elif value_type == 'WATER_LEVEL':
+      self.water_level.update(float(value) * WATER_LEVEL_L_PER_MM)
+    elif value_type == 'SOIL_MOISTURE':
+      self.soil_moisture.update(int(value))
+    elif value_type == 'UPTIME':
+      self.uptime.update(int(value))
+    elif value_type == 'FORCE_STATE':
+      self.force_state.update(int(value))
+    elif value_type == 'WATER_TIME':
+      self.water_time.update(int(value))
+    elif value_type == 'TIME_BETWEEN_WATERING':
+      self.time_between_watering.update(int(value))
+    elif value_type == 'SOC':
+      self.soc.update(float(value) / 1000)
+    else:
+      self.logger.error("Received garden update with unknown field: {}".format(value_type))
 
   def handle_remote_disconnected(self, addr):
     self.logger.info("Remote controller disconnected")
@@ -77,11 +153,24 @@ class GardenController():
 
   def handle_http_post(self, path_elements, data, authenticated):
     # All POST require authentication
+    redirect_response = '''
+    <html>
+    <head>
+    <meta http-equiv="refresh" content="0; URL='/'" />
+    </head>
+    <body>
+    </body>
+    </html>
+    '''
     if not authenticated:
       raise PermissionError()
     if len(path_elements) == 1 and path_elements[0] == 'send_remote':
-      self.logger.info("Received {}".format(data))
-      return '', None
+      if 'command' not in data:
+        raise ValueError('command field missing')
+      else:
+        command = data['command'][0]
+        self.remote_handler.send_line_all(command)
+      return redirect_response, None
     else:
       raise NameError()
 
@@ -89,7 +178,22 @@ class GardenController():
     return 'Garden'
 
   def main_section_content(self):
-    return 'Garden content'
+    ret = ''
+    for var in self.vars:
+      ret += var.display_html() + '\n'
+    ret += '''<form action="/garden/send_remote" method="post">
+    Command: <input type="text" name="command">
+    <input type="submit" value="Submit">
+    </form>'''
+    return ret
 
   def append_updates(self, updates):
-    pass
+    for var in self.vars:
+      try:
+        var.append_update(updates)
+      except:
+        print(var.get_display_name())
+
+  def append_all_variables(self, variables):
+    for var in self.vars:
+      variables.append(var)

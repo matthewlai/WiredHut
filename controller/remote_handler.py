@@ -54,9 +54,16 @@ class RemoteHandler(threading.Thread):
       self.client_connection_handlers[remote_addr] = ClientHandlerThread(
           connection, remote_addr, self.recv_handler, self.close_handler)
 
-  def send_line(self, line):
-    with self.to_send_lock:
-      to_send.append(line)
+  def send_line(self, addr, line):
+    if addr in self.client_connection_handlers.keys():
+      handler = self.client_connection_handlers[addr]
+      with handler.to_send_lock:
+        handler.to_send.append(line)
+
+  def send_line_all(self, line):
+    for handler in self.client_connection_handlers.values():
+      with handler.to_send_lock:
+        handler.to_send.append(line)
 
 class ClientHandlerThread(threading.Thread):
   def __init__(self, connection, remote_addr, recv_handler, close_handler):
@@ -98,7 +105,7 @@ class ClientHandlerThread(threading.Thread):
         try:
           with self.to_send_lock:
             for line in self.to_send:
-              self.connection.sendall(line + '\n')
+              self.connection.sendall((line + '\n').encode('utf-8'))
             self.to_send = []
         except BrokenPipeError:
           self.connection_closed()

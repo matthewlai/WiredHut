@@ -104,6 +104,9 @@ class HTTPHandler(BaseHTTPRequestHandler):
     except NameError as e:
       self.send_error(404, 'Object not found', str(e))
       return
+    except ValueError as e:
+      self.send_error(400, 'Bad request', str(e))
+      return
     except PermissionError:
       self.send_response(401)
       self.send_header('WWW-Authenticate',

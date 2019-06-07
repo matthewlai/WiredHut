@@ -30,11 +30,13 @@ from remote_handler import RemoteHandler
 PORT=2939
 
 LocationInfo = namedtuple('LocationInfo', ['display_name', 'has_temp',
-                                           'has_hum'])
+                                           'has_hum', 'temp_offset'],
+                                          defaults=(0,))
 
 LOCATIONS={
   'indoor': LocationInfo(display_name='Indoor', has_temp=True, has_hum=True),
-  'garden_mcu': LocationInfo(display_name='Garden MCU', has_temp=True, has_hum=False)
+  'garden_mcu': LocationInfo(display_name='Garden MCU', has_temp=True, has_hum=False, temp_offset=3.8),
+  'soil': LocationInfo(display_name='Soil', has_temp=True, has_hum=False)
 }
 
 class IndoorController():
@@ -77,7 +79,8 @@ class IndoorController():
       self.logger.error("Received environment update from unknown location: {}".format(location))
       return
     if measurement_type == 'TEMP' and LOCATIONS[location].has_temp:
-      self.temperatures[location].update(float(measurement) / 100)
+      offset = LOCATIONS[location].temp_offset
+      self.temperatures[location].update(float(measurement) / 100 + offset)
     elif measurement_type == 'HUMIDITY' and LOCATIONS[location].has_hum:
       self.humidities[location].update(float(measurement) / 10)
     else:
@@ -112,3 +115,10 @@ class IndoorController():
         self.temperatures[location].append_update(updates)
       if info.has_hum:
         self.humidities[location].append_update(updates)
+
+  def append_all_variables(self, variables):
+    for location, info in LOCATIONS.items():
+      if info.has_temp:
+        variables.append(self.temperatures[location])
+      if info.has_hum:
+        variables.append(self.humidities[location])
