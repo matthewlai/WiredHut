@@ -55,6 +55,13 @@ void SetLED3(bool on) {
   led = !on;
 }
 
+void SetLEDBinary(uint8_t val) {
+  SetLED0(val & 1);
+  SetLED1(val & (1 << 1));
+  SetLED2(val & (1 << 2));
+  SetLED3(val & (1 << 3));
+}
+
 void SetPump(bool on) {
   static OutputPin<PIN_G8> sw;
   sw = on;
@@ -82,29 +89,44 @@ using ADC1_Type = SingleConversionADC<ADC1>;
 float ReadPumpCurrent(ADC1_Type* adc) {
   static auto sampler = adc->GetGPIOInput<9>();
   static float offset = sampler.ReadNormalized();
+  [[maybe_unused]] static bool init_once = []() -> bool {
+    sampler.SetSamplingTime(10000000);
+    return true;
+  }();
   return (sampler.ReadNormalized() - offset) * Config::kFullScalePumpCurrent;
 }
 
 float ReadSw1Current(ADC1_Type* adc) {
   static auto sampler =adc->GetGPIOInput<8>();
   static float offset = sampler.ReadNormalized();
+  [[maybe_unused]] static bool init_once = []() -> bool {
+    sampler.SetSamplingTime(10000000);
+    return true;
+  }();
   return (sampler.ReadNormalized() - offset) * Config::kFullScaleSw1Current;
 }
 
 float ReadPressureSensorCurrent(ADC1_Type* adc) {
   static auto sampler =adc->GetGPIOInput<15>();
-  static float offset = sampler.ReadNormalized();
-  return (sampler.ReadNormalized() - offset) *
-      Config::kPressureSensorFullScaleCurrent;
+  [[maybe_unused]] static bool init_once = []() -> bool {
+    sampler.SetSamplingTime(10000000);
+    return true;
+  }();
+  return (sampler.ReadNormalized()) * Config::kPressureSensorFullScaleCurrent;
 }
 
 float ReadTemperatureInput(ADC1_Type* adc) {
   static auto sampler = adc->GetTemperatureInput();
+  [[maybe_unused]] static bool init_once = []() -> bool {
+    sampler.SetSamplingTime(10000000);
+    return true;
+  }();
+
   return sampler.ReadTempC();
 }
 
 float PressureSensorCurrentToHeightMm(float current) {
-  return (current - 0.004f) / 0.02f * 5.0f;
+  return (current - 0.004f) / (0.02f - 0.004f) * 5.0f;
 }
 
 template <typename I2CType>
@@ -118,11 +140,12 @@ using ESP8266_Type = ESP8266<USART6, PIN_G14, PIN_G9, PIN_G10, PIN_G13, PIN_G11>
 
 std::unique_ptr<ESP8266_Type> ConnectToHub() {
   auto p = std::make_unique<ESP8266_Type>(Config::kEsp8266BaudRate);
-  SetLED0(false);
-  SetLED1(false);
+  SetLEDBinary(0);
   if (p->ConnectToAP(Config::kSSID, Config::kPass)) {
-    SetLED0(true);
+    SetLEDBinary(1);
   } else {
+    SetLEDBinary(3);
+    DelayMilliseconds(1000);
     p.reset();
     return p;
   }
@@ -131,8 +154,10 @@ std::unique_ptr<ESP8266_Type> ConnectToHub() {
                             Config::kEnvironmentControllerPort) &&
       p->ConnectToTCPServer(Config::kGardenControllerLinkId, Config::kHubHost,
                             Config::kGardenControllerPort)) {
-    SetLED1(true);
+    SetLEDBinary(2);
   } else {
+    SetLEDBinary(4);
+    DelayMilliseconds(1000);
     p.reset();
     return p;
   }
@@ -140,11 +165,16 @@ std::unique_ptr<ESP8266_Type> ConnectToHub() {
 }
 
 int main() {
+  StartWDG();
+
   SingleConversionADC<ADC1> adc1;
+
+  SetLEDBinary(0xf);
+  DelayMilliseconds(1000);
 
   SetPump(false);
   SetSw1(false);
-  SetPressureSensorPower(false);
+  SetPressureSensorPower(true);
 
   USBSerial usb_serial;
 
@@ -165,234 +195,380 @@ int main() {
   USART<UART8, PIN_E1, PIN_E0> smartsolar(Config::kSmartSolarBaudRate);
 
   // Watering algorithm settings.
-  int water_time_seconds = 10 * 60;
-  int time_between_watering = 48 * 60 * 60;
-  float min_water_level_for_watering_m = 0.15f;
+  int water_time_seconds = Config::kDefaultWaterTimeSeconds;
+  int time_between_watering = Config::kDefaultTimeBetweenWatering;
+  float min_water_level_for_watering_m = Config::kDefaultMinWaterLevelM;
+  float min_water_level_for_watering_restart_m = Config::kDefaultMinWaterLevelRestartM;
 
   bool watering_now = false;
   int64_t last_watering_time_seconds = 0;
   int64_t watering_start_time = 0;
 
+  bool low_water_level_lockout = false;
+
+  int64_t last_connection_attempt_time = 0;
+
+  int64_t force_state_end = 0;
+  bool force_state = false;
+
+  auto esp8266 = ConnectToHub();
+
+  // For calibration.
+  ReadPressureSensorCurrent(&adc1);
+  ReadPumpCurrent(&adc1);
+  ReadSw1Current(&adc1);
+
+  ThrottledExecutor send_update_throttle(1000);
+
+  WindowFilteredValue<16> pump_current;
+  WindowFilteredValue<64> pressure_sensor_height;
+  WindowFilteredValue<16> soil_moisture;
+  WindowFilteredValue<16> soil_temperature;
+  WindowFilteredValue<16> mcu_temperature;
+
+  // Solar
+  bool solar_data_ready = false;
+  WindowFilteredValue<4> batt_voltage;
+  WindowFilteredValue<4> batt_current;
+  WindowFilteredValue<4> solar_voltage;
+  WindowFilteredValue<4> solar_current;
+  WindowFilteredValue<4> load_current;
+  std::string solar_mode;
+  std::string mppt_mode;
+
+  // in Ah
+  float state_of_charge_estimation = 0.0f;
+  bool state_of_charge_calibrated = false;
+
+  // We also store an unfiltered version of solar voltage for computing
+  // current.
+  float solar_voltage_raw = 0.0f;
+  int solar_error_code = 0;
+
+  // Receive data processing.
+  std::string partial_line = "";
+  std::vector<std::string> command_queue;
+
   while (true) {
-    DelayMilliseconds(5000);
+    int64_t time_now_seconds = GetTimeMilliseconds() / 1000LL;
 
-    // For calibration.
-    ReadPressureSensorCurrent(&adc1);
-    ReadPumpCurrent(&adc1);
-    ReadSw1Current(&adc1);
-
-    auto esp8266 = ConnectToHub();
-
-    if (!esp8266) {
-      continue;
+    if (!esp8266 &&
+        time_now_seconds >
+        (last_connection_attempt_time + Config::kConnectionRetryTime)) {
+      last_connection_attempt_time = time_now_seconds;
+      esp8266 = ConnectToHub();
     }
 
-    ThrottledExecutor send_update_throttle(1000);
-
-    bool pump_on = false;
-    float pump_current = 0.0f;
-    float pressure_sensor_height = 0.0f;
-    float soil_moisture = 0;
-    float soil_temperature = 0;
-
-    // Solar
-    bool solar_data_ready = false;
-    float batt_voltage = 0.0f;
-    float batt_current = 0.0f;
-    float solar_voltage = 0.0f;
-    float solar_current = 0.0f;
-    float load_current = 0.0f;
-    std::string solar_mode;
-    std::string mppt_mode;
-    int solar_error_code = 0;
-
-    while (true) {
-      while (smartsolar.LineAvailable()) {
-        std::string line = smartsolar.GetLine();
-        StringStream<64> ss(line);
-        std::string field_label;
-        int value;
-        ss >> field_label;
-        ss >> value;
-
-        usb_serial << "[Solar] Field: " << field_label << ", Value: " << value << std::endl;
-
-        if (field_label == "V") {
-          batt_voltage = float(value) / 1000.0f;
-        } else if (field_label == "I") {
-          batt_current = float(value) / 1000.0f;
-        } else if (field_label == "VPV") {
-          solar_voltage = float(value) / 1000.0f;
-        } else if (field_label == "PPV") {
-          // Not sure why we get PV power instead of current, but we can convert
-          // it (PPV is always received after the corresponding VPV)
-          float watts = value;
-          solar_current = watts / solar_voltage;
-        } else if (field_label == "IL") {
-          load_current = float(value) / 1000.0f;
-        } else if (field_label == "MPPT") {
-          switch (value) {
-            case 0:
-              mppt_mode = "OFF";
-              break;
-            case 1:
-              mppt_mode = "CVCI";
-              break;
-            case 2:
-              mppt_mode = "MPPT";
-              break;
-            default:
-              mppt_mode = Format(value);
+    if (esp8266) {
+      std::string received;
+      do {
+        received = esp8266->ReceiveData(
+            Config::kGardenControllerLinkId);
+        for (char c : received) {
+          if (c == '\n') {
+            command_queue.push_back(std::move(partial_line));
+            partial_line.clear();
+          } else {
+            partial_line.push_back(c);
           }
-        } else if (field_label == "CS") {
-          switch (value) {
-            case 0:
-              solar_mode = "OFF";
-              break;
-            case 2:
-              solar_mode = "FAULT";
-              break;
-            case 3:
-              solar_mode = "BULK";
-              break;
-            case 4:
-              solar_mode = "ABSORPTION";
-              break;
-            case 5:
-              solar_mode = "FLOAT";
-              break;
-            default:
-              solar_mode = Format(value);
+        }
+      } while (!received.empty());
+    }
+
+    for (const auto& command : command_queue) {
+      std::vector<std::string> parts = Split(command, ' ');
+      if (parts.size() < 2) {
+        continue;
+      } else {
+        std::string& command_str = parts[0];
+        int arg = Parse<int>(parts[1]);
+        if (command_str == "PING") {
+          if (esp8266) {
+            if (!esp8266->SendData(Config::kGardenControllerLinkId, 
+                "PONG " + Format(arg) + "\n")) {
+              esp8266.reset();
+            }
           }
-        } else if (field_label == "ERR") {
-          solar_error_code = value;
-        } else if (field_label == "Checksum") {
-          // Checksum is guaranteed to be the last in a block.
-          solar_data_ready = true;
+        } else if (command_str == "SET_WATER_TIME") {
+          water_time_seconds = arg;
+        } else if (command_str == "SET_TIME_BETWEEN_WATERING") {
+          time_between_watering = arg;
+        } else if (command_str == "SET_FORCE_STATE") {
+          if (parts.size() < 3) {
+            continue;
+          }
+          int state = arg;
+          int time = Parse<int>(parts[2]);
+          force_state_end = time_now_seconds + time;
+          force_state = state;
+        }
+      }
+    }
+
+    command_queue.clear();
+
+    while (smartsolar.LineAvailable() && smartsolar.DataAvailable() > 10) {
+      SetLEDBinary(5);
+      usb_serial << "[Solar] Data available: " << smartsolar.DataAvailable() << std::endl;
+
+      std::string line = smartsolar.GetLine();
+      usb_serial << "[Solar] Read: " << line << " (" << line.size() << ")" << std::endl;
+      if (line.find("\t") == std::string::npos) {
+        break;
+      }
+
+      std::vector<std::string> parts = Split(line, '\t');
+      std::string field_label = parts[0];
+
+      if (field_label == "Checksum") {
+        // Special handling for checksum because if we are lucky, the checksum
+        // value may turn out to be '\n', and we will hang below.
+        solar_data_ready = true;
+        break;
+      }
+
+      int value = Parse<int>(RemoveAll(parts[1], '\r'));
+
+      usb_serial << "[Solar] Label: " << field_label << ", Value: " << value << std::endl;
+
+      if (field_label == "V") {
+        batt_voltage.AddValue(float(value) / 1000.0f);
+      } else if (field_label == "I") {
+        batt_current.AddValue(float(value) / 1000.0f);
+        state_of_charge_estimation += float(value) / 1000.0f / 60.0f / 60.0f;
+      } else if (field_label == "VPV") {
+        solar_voltage.AddValue(float(value) / 1000.0f);
+        solar_voltage_raw = float(value) / 1000.0f;
+      } else if (field_label == "PPV") {
+        // Not sure why we get PV power instead of current, but we can convert
+        // it (PPV is always received after the corresponding VPV)
+        float watts = value;
+        solar_current.AddValue(watts / solar_voltage_raw);
+      } else if (field_label == "IL") {
+        load_current.AddValue(float(value) / 1000.0f);
+      } else if (field_label == "MPPT") {
+        switch (value) {
+          case 0:
+            mppt_mode = "OFF";
+            break;
+          case 1:
+            mppt_mode = "CVCI";
+            break;
+          case 2:
+            mppt_mode = "MPPT";
+            break;
+          default:
+            mppt_mode = Format(value);
+        }
+      } else if (field_label == "CS") {
+        switch (value) {
+          case 0:
+            solar_mode = "OFF";
+            break;
+          case 2:
+            solar_mode = "FAULT";
+            break;
+          case 3:
+            solar_mode = "BULK";
+            break;
+          case 4:
+            solar_mode = "ABSORPTION";
+            break;
+          case 5:
+            solar_mode = "FLOAT";
+            state_of_charge_estimation = 0.0f;
+            state_of_charge_calibrated = true;
+            break;
+          default:
+            solar_mode = Format(value);
+        }
+      } else if (field_label == "ERR") {
+        solar_error_code = value;
+      }
+    }
+
+    SetLEDBinary(6);
+
+    pressure_sensor_height.AddValue(
+        PressureSensorCurrentToHeightMm(ReadPressureSensorCurrent(&adc1)));
+
+    soil_temperature.AddValue(float(I2CReadRegister(&moisture_i2c,
+                                    Config::kTemperatureRegister)) / 10.0f);
+
+    int soil_moisture_raw = I2CReadRegister(&moisture_i2c,
+                                    Config::kMoistureRegister);
+    SetLEDBinary(7);
+
+    soil_moisture.AddValue(
+        static_cast<float>(soil_moisture_raw - Config::kSoilMoistureMin) /
+        (Config::kSoilMoistureMax - Config::kSoilMoistureMin) * 100.0f);
+
+    pump_current.AddValue(ReadPumpCurrent(&adc1));
+    mcu_temperature.AddValue(ReadTemperatureInput(&adc1));
+
+    SetLEDBinary(8);
+
+    if (send_update_throttle.ExecuteNow() && esp8266) {
+      SetLEDBinary(9);
+
+      if (!esp8266->SendData(Config::kEnvironmentControllerLinkId, 
+          "TEMP " + Format(int(mcu_temperature.AvgValue() * 100)) +
+          " garden_mcu\n")) {
+        esp8266.reset();
+        break;
+      }
+
+      if (!esp8266->SendData(Config::kEnvironmentControllerLinkId, 
+          "TEMP " + Format(int(soil_temperature.AvgValue() * 100.0f)) +
+          " soil\n")) {
+        esp8266.reset();
+        break;
+      }
+
+      if (!esp8266->SendData(Config::kGardenControllerLinkId, 
+          "PUMP_ON " + Format(int(watering_now)) + "\n")) {
+        esp8266.reset();
+        break;
+      }
+
+      if (!esp8266->SendData(Config::kGardenControllerLinkId, 
+          "PUMP_I " + Format(int(pump_current.AvgValue() * 1000)) + "\n")) {
+        esp8266.reset();
+        break;
+      }
+
+      if (!esp8266->SendData(Config::kGardenControllerLinkId, 
+          "WATER_LEVEL " + Format(int(pressure_sensor_height.AvgValue() * 1000)) + "\n")) {
+        esp8266.reset();
+        break;
+      }
+
+      if (!esp8266->SendData(Config::kGardenControllerLinkId, 
+          "SOIL_MOISTURE " + Format(int(soil_moisture.AvgValue())) + "\n")) {
+        esp8266.reset();
+        break;
+      }
+
+      if (!esp8266->SendData(Config::kGardenControllerLinkId, 
+          "UPTIME " + Format(GetTimeMilliseconds() / 1000ULL) + "\n")) {
+        esp8266.reset();
+        break;
+      }
+
+      if (state_of_charge_calibrated) {
+        if (!esp8266->SendData(Config::kGardenControllerLinkId, 
+            "SOC " + Format(int(state_of_charge_calibrated * 1000)) + "\n")) {
+          esp8266.reset();
+          break;
         }
       }
 
-      if (send_update_throttle.ExecuteNow()) {
-        SetPressureSensorPower(true);
-        // Spec sheet says 20ms max startup time. We leave some more time for
-        // the pressure sensor.
-        DelayMilliseconds(30);
-        pressure_sensor_height =
-            PressureSensorCurrentToHeightMm(ReadPressureSensorCurrent(&adc1));
-        SetPressureSensorPower(false);
-
-        soil_moisture = I2CReadRegister(&moisture_i2c,
-                                        Config::kMoistureRegister);
-        soil_temperature = float(I2CReadRegister(&moisture_i2c,
-                                        Config::kTemperatureRegister)) / 10.0f;
-
-        soil_moisture -= Config::kSoilMoistureMin;
-        soil_moisture /= Config::kSoilMoistureMax - Config::kSoilMoistureMin;
-        soil_moisture *= 100;
-
-        pump_current = ReadPumpCurrent(&adc1);
-
-        if (!esp8266->SendData(Config::kEnvironmentControllerLinkId, 
-            "TEMP " + Format(int(ReadTemperatureInput(&adc1) * 100)) +
-            " garden_mcu\n")) {
-          break;
-        }
-
-        if (!esp8266->SendData(Config::kEnvironmentControllerLinkId, 
-            "TEMP " + Format(int(soil_temperature * 100.0f)) +
-            " soil\n")) {
-          break;
-        }
-
-        if (!esp8266->SendData(Config::kGardenControllerLinkId, 
-            "PUMP_ON " + Format(int(pump_on)) + "\n")) {
-          break;
-        }
-
-        if (!esp8266->SendData(Config::kGardenControllerLinkId, 
-            "PUMP_I " + Format(int(pump_current * 1000)) + "\n")) {
-          break;
-        }
-
-        if (!esp8266->SendData(Config::kGardenControllerLinkId, 
-            "WATER_LEVEL " + Format(int(pressure_sensor_height * 1000)) + "\n")) {
-          break;
-        }
-
-        if (!esp8266->SendData(Config::kGardenControllerLinkId, 
-            "SOIL_MOISTURE " + Format(int(soil_moisture)) + "\n")) {
-          break;
-        }
-
-        if (solar_data_ready) {
-          if (!esp8266->SendData(Config::kGardenControllerLinkId, 
-              "SOL_V " + Format(int(solar_voltage * 1000)) + "\n")) {
-            break;
-          }
-
-          if (!esp8266->SendData(Config::kGardenControllerLinkId, 
-              "SOL_I " + Format(int(solar_current * 1000)) + "\n")) {
-            break;
-          }
-
-          if (!esp8266->SendData(Config::kGardenControllerLinkId, 
-              "BATT_V " + Format(int(batt_voltage * 1000)) + "\n")) {
-            break;
-          }
-
-          if (!esp8266->SendData(Config::kGardenControllerLinkId, 
-              "BATT_I " + Format(int(batt_current * 1000)) + "\n")) {
-            break;
-          }
-
-          if (!esp8266->SendData(Config::kGardenControllerLinkId, 
-              "LOAD_I " + Format(int(load_current * 1000)) + "\n")) {
-            break;
-          }
-
-          if (!esp8266->SendData(Config::kGardenControllerLinkId, 
-              "SOLAR_MODE " + solar_mode + "\n")) {
-            break;
-          }
-
-          if (!esp8266->SendData(Config::kGardenControllerLinkId, 
-              "MPPT_MODE " + mppt_mode + "\n")) {
-            break;
-          }
-
-          if (!esp8266->SendData(Config::kGardenControllerLinkId, 
-              "SOL_ERR " + Format(solar_error_code) + "\n")) {
-            break;
-          }
-
-          solar_data_ready = false;
-        }
+      if (!esp8266->SendData(Config::kGardenControllerLinkId, 
+          "FORCE_STATE " + Format(int(time_now_seconds < force_state_end)) + "\n")) {
+        esp8266.reset();
+        break;
       }
 
-      int64_t time_now_seconds = GetTimeMilliseconds() / 1000LL;
+      if (!esp8266->SendData(Config::kGardenControllerLinkId, 
+          "WATER_TIME " + Format(water_time_seconds) + "\n")) {
+        esp8266.reset();
+        break;
+      }
+
+      if (!esp8266->SendData(Config::kGardenControllerLinkId, 
+          "TIME_BETWEEN_WATERING " + Format(time_between_watering) + "\n")) {
+        esp8266.reset();
+        break;
+      }
+
+      if (solar_data_ready) {
+        if (!esp8266->SendData(Config::kGardenControllerLinkId, 
+            "SOL_V " + Format(int(solar_voltage.AvgValue() * 1000)) + "\n")) {
+          esp8266.reset();
+          break;
+        }
+
+        if (!esp8266->SendData(Config::kGardenControllerLinkId, 
+            "SOL_I " + Format(int(solar_current.AvgValue() * 1000)) + "\n")) {
+          esp8266.reset();
+          break;
+        }
+
+        if (!esp8266->SendData(Config::kGardenControllerLinkId, 
+            "BATT_V " + Format(int(batt_voltage.AvgValue() * 1000)) + "\n")) {
+          esp8266.reset();
+          break;
+        }
+
+        if (!esp8266->SendData(Config::kGardenControllerLinkId, 
+            "BATT_I " + Format(int(batt_current.AvgValue() * 1000)) + "\n")) {
+          esp8266.reset();
+          break;
+        }
+
+        if (!esp8266->SendData(Config::kGardenControllerLinkId, 
+            "LOAD_I " + Format(int(load_current.AvgValue() * 1000)) + "\n")) {
+          esp8266.reset();
+          break;
+        }
+
+        if (!esp8266->SendData(Config::kGardenControllerLinkId, 
+            "SOL_MODE " + solar_mode + "\n")) {
+          esp8266.reset();
+          break;
+        }
+
+        if (!esp8266->SendData(Config::kGardenControllerLinkId, 
+            "MPPT_MODE " + mppt_mode + "\n")) {
+          esp8266.reset();
+          break;
+        }
+
+        if (!esp8266->SendData(Config::kGardenControllerLinkId, 
+            "SOL_ERR " + Format(solar_error_code) + "\n")) {
+          esp8266.reset();
+          break;
+        }
+
+        solar_data_ready = false;
+      }
+
+      SetLEDBinary(9);
+    }
+
+    if (time_now_seconds < force_state_end) {
+      SetPump(force_state);
+    } else {
       if (watering_now) {
-        SetPump(true);
-
-        if (pressure_sensor_height < min_water_level_for_watering_m ||
+        if (pressure_sensor_height.AvgValue() < min_water_level_for_watering_m ||
             (time_now_seconds - watering_start_time) > water_time_seconds) {
-          last_watering_time_seconds = time_now_seconds;
           watering_now = false;
-          SetPump(false);
         }
       } else {
-        SetPump(false);
-
         int64_t time_since_last_water =
             time_now_seconds - last_watering_time_seconds;
-        if (time_since_last_water > time_between_watering && 
-            pressure_sensor_height > min_water_level_for_watering_m) {
+        if ((time_since_last_water > time_between_watering || 
+            (last_watering_time_seconds == 0 && time_now_seconds > 10)) && 
+            !low_water_level_lockout) {
           watering_now = true;
           watering_start_time = time_now_seconds;
-          SetPump(true);
+          last_watering_time_seconds = time_now_seconds;
         }
       }
-      
-      DelayMilliseconds(100);
+
+      SetPump(watering_now);
     }
+
+    if (pressure_sensor_height.AvgValue() < min_water_level_for_watering_m) {
+      low_water_level_lockout = true;
+    }
+
+    if (pressure_sensor_height.AvgValue() > min_water_level_for_watering_restart_m) {
+      low_water_level_lockout = false;
+    }
+
+    StrokeWDG();
+    
+    DelayMilliseconds(100);
   }
 }

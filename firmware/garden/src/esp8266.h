@@ -62,7 +62,7 @@ class ESP8266 {
     gpio0_ = bootloader ? 0 : 1;
     reset_ = 0;
     chen_ = 0;
-    DelayMilliseconds(1);
+    DelayMilliseconds(100);
     chen_ = 1;
     reset_ = 1;
 
@@ -80,6 +80,9 @@ class ESP8266 {
 
     // Multiple connection mode.
     SendCommand("AT+CIPMUX=1");
+
+    // Passive mode (ESP8266 holds incoming data in internal buffer).
+    SendCommand("AT+CIPRECVMODE=1");
   }
 
   std::string Version() {
@@ -162,6 +165,42 @@ class ESP8266 {
 
     auto response = SendCommand(data);
     return response.first == CommandStatus::OK;
+  }
+
+  std::string ReceiveData(int link_id) {
+    // The AT instruction set manual says we should receive:
+    // "+CIPRECVDATA:<actual len>,<data>"
+    // We actually get:
+    // "+CIPRECVDATA,<actual len>:<data>"
+    // ...
+    auto response = SendCommand(
+      "AT+CIPRECVDATA=" + Format(link_id) + ",256");
+    if (response.first == CommandStatus::OK) {
+      std::string response_str = response.second;
+      std::size_t response_begin = response_str.find("+CIPRECVDATA");
+      if (response_begin == std::string::npos) {
+        return "";
+      } else {
+        response_str = response_str.substr(response_begin);
+      }
+      std::size_t comma = response_str.find(',');
+      if (comma == std::string::npos) {
+        Log("No comma");
+        return "";
+      } else {
+        std::size_t actual_len_end = response_str.find(':');
+        std::size_t actual_len = Parse<int>(
+            response_str.substr(comma + 1, (actual_len_end - comma - 1)));
+        std::size_t data_start = actual_len_end + 1;
+        std::size_t data_end = data_start + actual_len;
+        if (data_end <= response_str.size()) {
+          auto data_received = response_str.substr(data_start, (data_end - data_start));
+          Log(std::string("[ESP8266] Received: ") + data_received);
+          return data_received;
+        }
+      }
+    }
+    return "";
   }
 
  private:
