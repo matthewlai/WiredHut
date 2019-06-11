@@ -20,14 +20,13 @@ import logging
 import time
 import threading
 
+import config
 from dynamic_var import DynamicVar
 from remote_handler import RemoteHandler
 
 # Parameter list (sent periodically from MCU):
 # TEMP <0.01 deg C> <location>
 # HUMIDITY <0.1%> <location>
-
-PORT=2939
 
 LocationInfo = namedtuple('LocationInfo', ['display_name', 'has_temp',
                                            'has_hum', 'temp_offset'],
@@ -45,7 +44,7 @@ class IndoorController():
     self.logger.setLevel(logging.DEBUG)
     self.logger.info("Indoor controller started")
     self.remote_handler = RemoteHandler(
-      PORT,
+      config.INDOOR_PORT,
       lambda addr: self.handle_remote_connected(addr),
       lambda addr, line: self.handle_remote_receive(addr, line),
       lambda addr: self.handle_remote_disconnected(addr))
