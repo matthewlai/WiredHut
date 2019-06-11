@@ -18,8 +18,11 @@ this program. If not, see <http://www.gnu.org/licenses/>.
 import calendar
 from datetime import datetime, timezone
 import logging
+import sys
 import sqlite3
 import time
+import threading
+import traceback
 
 from dynamic_var import DynamicVar
 from garden import GardenController
@@ -179,7 +182,13 @@ def main():
 
   while True:
     timestamp_start.update(int(time.time() * 1000))
-    time.sleep(1)
+    try:
+      time.sleep(1)
+    except KeyboardInterrupt:
+      for th in threading.enumerate():
+        print(th)
+        traceback.print_stack(sys._current_frames()[th.ident])
+      break
     timestamp_end.update(int(time.time() * 1000))
     values = []
 
