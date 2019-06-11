@@ -19,6 +19,7 @@ import logging
 from io import StringIO
 import time
 
+import config
 from dynamic_var import DynamicVar
 from remote_handler import RemoteHandler
 
@@ -50,8 +51,6 @@ from remote_handler import RemoteHandler
 # SET_MIN_WATER_LEVEL <mm>
 # SET_FORCE_STATE <state> <seconds> (state = "0, 1")
 
-PORT=2938
-
 WATER_LEVEL_L_PER_MM=0.55
 
 class GardenController():
@@ -60,7 +59,7 @@ class GardenController():
     self.logger.setLevel(logging.DEBUG)
     self.logger.info("Garden controller started")
     self.remote_handler = RemoteHandler(
-      PORT,
+      config.GARDEN_PORT,
       lambda addr: self.handle_remote_connected(addr),
       lambda addr, line: self.handle_remote_receive(addr, line),
       lambda addr: self.handle_remote_disconnected(addr))

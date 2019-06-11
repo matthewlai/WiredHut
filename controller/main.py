@@ -24,19 +24,13 @@ import time
 import threading
 import traceback
 
+import config
 from dynamic_var import DynamicVar
 from garden import GardenController
 from http_server import start_http_server
 from indoor import IndoorController
 from static_server import StaticServer
 from util import utc_to_local
-
-
-# Credientials file should contain one line per user, with username and password
-# separated by ':'
-CREDENTIALS_FILE='credentials.txt'
-
-SQLITE_FILE='record.db'
 
 
 def handle_http_get(path_elements, query_vars, authenticated, delegation_map):
@@ -63,29 +57,6 @@ def handle_http_post(path_elements, data, authenticated, delegation_map):
                                                              authenticated)
   else:
     raise NameError()
-
-
-def read_credentials():
-  credentials = []
-
-  try:
-    with open('credentials.txt', 'r') as cred_file:
-      for line in cred_file:
-        if line.find(':') != -1:
-          user = line.split(':')[0]
-          password = line.split(':')[1]
-          credentials.append((user.strip('\n'), password.strip('\n')))
-  except:
-    print("Failed to read " + CREDENTIALS_FILE)
-    return
-
-  if len(credentials) == 0:
-    print("Failed to read any credential from " + CREDENTIALS_FILE)
-    return
-  else:
-    print("{} credential(s) read".format(len(credentials)))
-
-  return credentials
 
 
 def main_page(delegation_map):
@@ -122,7 +93,7 @@ def main():
             ' %(message)s (%(filename)s:%(lineno)d)'),
     datefmt='%m/%d/%Y %H:%M:%S')
 
-  credentials = read_credentials()
+  credentials = config.CREDENTIALS
 
   garden_controller = GardenController()
   indoor_controller = IndoorController()
@@ -135,7 +106,7 @@ def main():
     'static': static_server
   }
           
-  start_http_server(port=8000, credentials=credentials, num_threads=16,
+  start_http_server(port=config.HTTPS_PORT, credentials=credentials, num_threads=16,
                     get_handler=lambda path_elements, query_vars,
                     authenticated: handle_http_get(path_elements, query_vars,
                                                    authenticated,
@@ -148,7 +119,7 @@ def main():
   timestamp_start = DynamicVar("Timestamp Start (ms)", "timestamp_start_ms")
   timestamp_end = DynamicVar("Timestamp End (ms)", "timestamp_end_ms")
 
-  db = sqlite3.connect(SQLITE_FILE)
+  db = sqlite3.connect(config.SQLITE_PATH)
   db.execute("PRAGMA synchronous = OFF")
 
   variables = []

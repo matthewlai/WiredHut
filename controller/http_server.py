@@ -21,9 +21,12 @@ import gzip
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import socket
 import socketserver
+import ssl
 import time
 import threading
 from urllib import parse
+
+import config
 
 # The user is banned if they attempted FAILED_ATTEMPTS_COUNTS failed
 # authorizations in the past FAILED_ATTEMPTS_WINDOW seconds.
@@ -205,6 +208,12 @@ def start_http_server(port, credentials, num_threads, get_handler,
   sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
   sock.bind(addr)
   sock.listen(num_threads)
+
+  tls_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+  tls_context.load_cert_chain(config.TLS_CERTCHAIN_PATH,
+                              config.TLS_PRIVATE_KEY_PATH)
+
+  sock = tls_context.wrap_socket(sock, server_side=True)
 
   HTTPHandler.credentials = credentials
   HTTPHandler.get_handler.append(get_handler)
