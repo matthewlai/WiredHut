@@ -55,10 +55,10 @@ class IndoorController():
 
     for location, info in LOCATIONS.items():
       if info.has_temp:
-        self.temperatures[location] = DynamicVar("Temperature",
+        self.temperatures[location] = DynamicVar("Temperature (°C)",
             "indoor_temp_{}".format(location), format_str='{0:.2f}°C')
       if info.has_hum:
-        self.humidities[location] = DynamicVar("Humidity",
+        self.humidities[location] = DynamicVar("Humidity (%)",
             "indoor_hum_{}".format(location), format_str='{0:.2f}%')
 
   def handle_remote_connected(self, addr):

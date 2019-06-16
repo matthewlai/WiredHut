@@ -64,26 +64,26 @@ class GardenController():
       lambda addr, line: self.handle_remote_receive(addr, line),
       lambda addr: self.handle_remote_disconnected(addr))
     self.sol_v = DynamicVar(
-        "Solar Voltage", "garden_solar_voltage", format_str='{0:.3f}V')
+        "Solar Voltage (V)", "garden_solar_voltage", format_str='{0:.3f}V')
     self.sol_i = DynamicVar(
-        "Solar Current", "garden_solar_current", format_str='{0:.3f}A')
+        "Solar Current (A)", "garden_solar_current", format_str='{0:.3f}A')
     self.sol_p = DynamicVar(
-        "Solar Power", "garden_solar_power", format_str='{0:.1f}W')
+        "Solar Power (W)", "garden_solar_power", format_str='{0:.1f}W')
     self.sol_mode = DynamicVar("Solar Mode", "garden_solar_mode", enum_values = ['OFF', 'FAULT', 'BULK', 'ABSORPTION', 'FLOAT'], dtype=str)
     self.mppt_mode = DynamicVar("Solar MPPT Mode", "garden_mppt_mode", enum_values = ['OFF', 'CVCI', 'MPPT'], dtype=str)
-    self.sol_err = DynamicVar("Solar Error", "garden_solar_error", dtype=int, aggregation_function=AggregationFunction.MAJORITY)
-    self.batt_v = DynamicVar("Battery Voltage", "garden_battery_voltage", format_str='{0:.3f}V')
-    self.batt_i = DynamicVar("Battery Current", "garden_battery_current", format_str='{0:.3f}A')
-    self.soc = DynamicVar("Battery State of Charge", "garden_soc", format_str='{0:.1f}mAh')
-    self.load_i = DynamicVar("Load Current", "garden_load_current", format_str='{0:.3f}A')
+    self.sol_err = DynamicVar("Solar Error", "garden_solar_error", dtype=str, enum_values=['0'])
+    self.batt_v = DynamicVar("Battery Voltage (V)", "garden_battery_voltage", format_str='{0:.3f}V')
+    self.batt_i = DynamicVar("Battery Current (A)", "garden_battery_current", format_str='{0:.3f}A')
+    self.soc = DynamicVar("Battery State of Charge (Ah)", "garden_soc", format_str='{0:.1f}Ah')
+    self.load_i = DynamicVar("Load Current (A)", "garden_load_current", format_str='{0:.3f}A')
     self.pump_on = DynamicVar("Pump On", "garden_pump_on", dtype=int)
-    self.pump_i = DynamicVar("Pump Current", "garden_pump_current", format_str='{0:.3f}A')
-    self.water_level = DynamicVar("Water Level", "garden_water_level", format_str='{0:.1f}L')
-    self.soil_moisture = DynamicVar("Soil Moisture", "garden_soil_moisture", format_str='{0:.1f}%')
-    self.water_time = DynamicVar("Watering Time", "garden_water_time", format_str='{}s', dtype=int)
-    self.time_between_watering = DynamicVar("Time Between Watering", "garden_time_between_watering", format_str='{}s', dtype=int)
+    self.pump_i = DynamicVar("Pump Current (A)", "garden_pump_current", format_str='{0:.3f}A')
+    self.water_level = DynamicVar("Water Level (L)", "garden_water_level", format_str='{0:.1f}L')
+    self.soil_moisture = DynamicVar("Soil Moisture (%)", "garden_soil_moisture", format_str='{0:.1f}%')
+    self.water_time = DynamicVar("Watering Time Setting (s)", "garden_water_time", format_str='{}s', dtype=int)
+    self.time_between_watering = DynamicVar("Time Between Watering Setting (s)", "garden_time_between_watering", format_str='{}s', dtype=int)
     self.force_state = DynamicVar("State Forced", "garden_force_state", dtype=int)
-    self.uptime = DynamicVar("MCU Uptime", "garden_mcu_uptime", format_str='{}s', dtype=int)
+    self.uptime = DynamicVar("MCU Uptime (s)", "garden_mcu_uptime", format_str='{}s', dtype=int)
 
     self.vars = [self.sol_v, self.sol_i, self.sol_p, self.sol_mode,
                  self.mppt_mode, self.sol_err, self.batt_v, self.batt_i,
@@ -124,7 +124,7 @@ class GardenController():
     elif value_type == 'LOAD_I':
       self.load_i.update(float(value) / 1000)
     elif value_type == 'PUMP_ON':
-      self.pump_on.update(value)
+      self.pump_on.update(int(value))
     elif value_type == 'PUMP_I':
       self.pump_i.update(float(value) / 1000)
     elif value_type == 'WATER_LEVEL':
@@ -140,7 +140,7 @@ class GardenController():
     elif value_type == 'TIME_BETWEEN_WATERING':
       self.time_between_watering.update(int(value))
     elif value_type == 'SOC':
-      self.soc.update(float(value) / 1000)
+      self.soc.update(float(value))
     else:
       self.logger.error("Received garden update with unknown field: {}".format(value_type))
 

@@ -222,7 +222,7 @@ class DynamicVar():
           yAxes: [{{
             display: true,
             scaleLabel: {{
-              display: true,
+              display: false,
               labelString: 'value'
             }},
             {y_axis_additional_settings}

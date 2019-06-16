@@ -84,6 +84,7 @@ def main():
       #SendVal(connection, 'SOL_I', SampleSine(2, 20, 20, t))
       #SendVal(connection, 'BATT_V', SampleSine(11, 13, 3, t))
       SendVal(connection, 'MPPT_MODE', 'MPPT')
+      SendVal(connection, 'SOL_ERR', '0')
       t += 1
       time.sleep(1)
 
