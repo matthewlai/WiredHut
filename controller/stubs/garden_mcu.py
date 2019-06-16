@@ -80,9 +80,10 @@ def main():
       except:
         # Connection closed not so normally.
         break
-      SendVal(connection, 'SOL_V', SampleSine(15, 22, 5, t))
-      SendVal(connection, 'SOL_I', SampleSine(2, 20, 20, t))
-      SendVal(connection, 'BATT_V', SampleSine(11, 13, 3, t))
+      #SendVal(connection, 'SOL_V', SampleSine(15, 22, 5, t))
+      #SendVal(connection, 'SOL_I', SampleSine(2, 20, 20, t))
+      #SendVal(connection, 'BATT_V', SampleSine(11, 13, 3, t))
+      SendVal(connection, 'MPPT_MODE', 'MPPT')
       t += 1
       time.sleep(1)
 

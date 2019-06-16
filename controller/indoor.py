@@ -101,7 +101,7 @@ class IndoorController():
   def main_section_content(self):
     ret = ''
     for location, info in LOCATIONS.items():
-      ret += '<h3>{}</h3>'.format(info.display_name)
+      ret += '<div class="sub-section-title"><h3>{}</h3></div>'.format(info.display_name)
       if info.has_temp:
         ret += self.temperatures[location].display_html()
       if info.has_hum:

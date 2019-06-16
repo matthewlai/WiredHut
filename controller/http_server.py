@@ -22,8 +22,10 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 import socket
 import socketserver
 import ssl
+import sys
 import time
 import threading
+import traceback
 from urllib import parse
 
 import config
@@ -41,6 +43,11 @@ def encode_credential(credential):
   return base64.b64encode((credential[0] + ':' +
       credential[1]).encode('utf-8')).decode('utf-8')
 
+
+def get_trace():
+  exc_type, exc_value, exc_traceback = sys.exc_info()
+  return '\n'.join(
+      traceback.format_exception(exc_type, exc_value, exc_traceback))
 
 class HTTPHandler(BaseHTTPRequestHandler):
   auth_dict_lock = threading.Lock()
@@ -105,10 +112,10 @@ class HTTPHandler(BaseHTTPRequestHandler):
         # We probably already have a byte array.
         pass
     except NameError as e:
-      self.send_error(404, 'Object not found', str(e))
+      self.send_error(404, 'Object not found', get_trace())
       return
     except ValueError as e:
-      self.send_error(400, 'Bad request', str(e))
+      self.send_error(400, 'Bad request', get_trace())
       return
     except PermissionError:
       self.send_response(401)

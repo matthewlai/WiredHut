@@ -20,7 +20,7 @@ from io import StringIO
 import time
 
 import config
-from dynamic_var import DynamicVar
+from dynamic_var import DynamicVar, AggregationFunction
 from remote_handler import RemoteHandler
 
 # Parameter list (sent periodically from MCU):
@@ -69,9 +69,9 @@ class GardenController():
         "Solar Current", "garden_solar_current", format_str='{0:.3f}A')
     self.sol_p = DynamicVar(
         "Solar Power", "garden_solar_power", format_str='{0:.1f}W')
-    self.sol_mode = DynamicVar("Solar Mode", "garden_solar_mode", dtype=str)
-    self.mppt_mode = DynamicVar("Solar MPPT Mode", "garden_mppt_mode", dtype=str)
-    self.sol_err = DynamicVar("Solar Error", "garden_solar_error", dtype=int)
+    self.sol_mode = DynamicVar("Solar Mode", "garden_solar_mode", enum_values = ['OFF', 'FAULT', 'BULK', 'ABSORPTION', 'FLOAT'], dtype=str)
+    self.mppt_mode = DynamicVar("Solar MPPT Mode", "garden_mppt_mode", enum_values = ['OFF', 'CVCI', 'MPPT'], dtype=str)
+    self.sol_err = DynamicVar("Solar Error", "garden_solar_error", dtype=int, aggregation_function=AggregationFunction.MAJORITY)
     self.batt_v = DynamicVar("Battery Voltage", "garden_battery_voltage", format_str='{0:.3f}V')
     self.batt_i = DynamicVar("Battery Current", "garden_battery_current", format_str='{0:.3f}A')
     self.soc = DynamicVar("Battery State of Charge", "garden_soc", format_str='{0:.1f}mAh')
@@ -80,8 +80,8 @@ class GardenController():
     self.pump_i = DynamicVar("Pump Current", "garden_pump_current", format_str='{0:.3f}A')
     self.water_level = DynamicVar("Water Level", "garden_water_level", format_str='{0:.1f}L')
     self.soil_moisture = DynamicVar("Soil Moisture", "garden_soil_moisture", format_str='{0:.1f}%')
-    self.water_time = DynamicVar("Watering_time", "garden_water_time", format_str='{}s', dtype=int)
-    self.time_between_watering = DynamicVar("Time between watering", "garden_time_between_watering", format_str='{}s', dtype=int)
+    self.water_time = DynamicVar("Watering Time", "garden_water_time", format_str='{}s', dtype=int)
+    self.time_between_watering = DynamicVar("Time Between Watering", "garden_time_between_watering", format_str='{}s', dtype=int)
     self.force_state = DynamicVar("State Forced", "garden_force_state", dtype=int)
     self.uptime = DynamicVar("MCU Uptime", "garden_mcu_uptime", format_str='{}s', dtype=int)
 
@@ -180,10 +180,10 @@ class GardenController():
     ret = ''
     for var in self.vars:
       ret += var.display_html() + '\n'
-    ret += '''<form action="/garden/send_remote" method="post">
+    ret += '''<div class="row"><form action="/garden/send_remote" method="post">
     Command: <input type="text" name="command">
     <input type="submit" value="Submit">
-    </form>'''
+    </form></div>'''
     return ret
 
   def append_updates(self, updates):

@@ -30,10 +30,12 @@ from garden import GardenController
 from http_server import start_http_server
 from indoor import IndoorController
 from static_server import StaticServer
+from table import SQLiteTable
 from util import utc_to_local
 
 
-def handle_http_get(path_elements, query_vars, authenticated, delegation_map):
+def handle_http_get(path_elements, query_vars, authenticated, delegation_map,
+                    tables):
   if len(path_elements) == 0:
     return main_page(delegation_map), None
   elif path_elements[0] == 'aggregated_updates':
@@ -42,6 +44,13 @@ def handle_http_get(path_elements, query_vars, authenticated, delegation_map):
       if hasattr(delegate, 'append_updates'):
         delegate.append_updates(updates)
     return '\n'.join(updates), None
+  elif path_elements[0] == 'historical_values':
+    historical_values = []
+    end_time = 4102444800 # 2100
+    for table in tables:
+      end_time = table.append_historical_values(historical_values,
+          config.DATAPOINTS_PER_TABLE, end_time)
+    return '\n'.join(historical_values), None
   elif path_elements[0] in delegation_map:
     return delegation_map[path_elements[0]].handle_http_get(path_elements[1:],
                                                             query_vars,
@@ -64,8 +73,19 @@ def main_page(delegation_map):
 <html lang="en">
   <head>
     <meta charset="utf-8">
+    <!-- Force a refresh every hour because we only do value summarising
+         on the server side, and our charts will grow too big -->
+    <meta http-equiv="refresh" content="3600">
     <link rel="stylesheet" href="/static/style.css">
+    <script src="/static/moment.min.js"></script>
     <script src="/static/ajax.js"></script>
+    <script src="/static/util.js"></script>
+    <script src="/static/Chart.bundle.min.js"></script>
+
+    <!-- datalabels plugin destroys my DOM and breaks everything for some
+         reason, so we have to settle with no datalabels for now.
+    -->
+    <!--<script src="/static/chartjs-plugin-datalabels"</script>-->
     <title>WiredHut</title>
   </head>
   <body>
@@ -105,54 +125,33 @@ def main():
     'indoor': indoor_controller,
     'static': static_server
   }
-          
-  start_http_server(port=config.HTTPS_PORT, credentials=credentials, num_threads=16,
-                    get_handler=lambda path_elements, query_vars,
-                    authenticated: handle_http_get(path_elements, query_vars,
-                                                   authenticated,
-                                                   http_delegation_map),
-                    post_handler=lambda path_elements, data,
-                    authenticated: handle_http_post(
-                        path_elements, data, authenticated,
-                        http_delegation_map))
-
-  timestamp_start = DynamicVar("Timestamp Start (ms)", "timestamp_start_ms")
-  timestamp_end = DynamicVar("Timestamp End (ms)", "timestamp_end_ms")
-
-  db = sqlite3.connect(config.SQLITE_PATH)
-  db.execute("PRAGMA synchronous = OFF")
 
   variables = []
   for service in http_delegation_map.values():
     if hasattr(service, 'append_all_variables'):
       service.append_all_variables(variables)
 
-  create_string = ','.join(['{} {}'.format(
-      var.get_internal_name(), var.get_sql_type()) for var in variables])
+  db = sqlite3.connect(config.SQLITE_PATH, check_same_thread = False)
+  db.execute("PRAGMA synchronous = OFF")
 
-  # Try to create a new table. This will fail if the table already exists, and
-  # that is fine.
-  create_statement = '''CREATE TABLE data1s ({})'''.format(create_string)
-  try:
-    db.execute(create_statement)
-  except sqlite3.OperationalError:
-    pass
-
-  # Insert any new variable since last time.
-  existing_columns = set(
-      map(lambda x: x[0], db.execute('SELECT * from data1s').description))
-
-  for var in variables:
-    if var.get_internal_name() not in existing_columns:
-      print('''ALTER TABLE data1s ADD {} {};'''.format(
-          var.get_internal_name(), var.get_sql_type()))
-      db.execute('''ALTER TABLE data1s ADD {} {};'''.format(
-          var.get_internal_name(), var.get_sql_type()))
-
-  variable_names = [var.get_internal_name() for var in variables]
+  tables = []
+  for table_config in config.SQLITE_TABLE_CONFIGS:
+    name, store_period, keep_period = table_config
+    tables.append(SQLiteTable(db, name, store_period, keep_period, variables))
+          
+  start_http_server(port=config.HTTPS_PORT, credentials=credentials,
+                    num_threads=config.HTTP_THREADS,
+                    get_handler=lambda path_elements, query_vars,
+                    authenticated: handle_http_get(path_elements, query_vars,
+                                                   authenticated,
+                                                   http_delegation_map,
+                                                   tables),
+                    post_handler=lambda path_elements, data,
+                    authenticated: handle_http_post(
+                        path_elements, data, authenticated,
+                        http_delegation_map))
 
   while True:
-    timestamp_start.update(int(time.time() * 1000))
     try:
       time.sleep(1)
     except KeyboardInterrupt:
@@ -160,19 +159,17 @@ def main():
         print(th)
         traceback.print_stack(sys._current_frames()[th.ident])
       break
-    timestamp_end.update(int(time.time() * 1000))
-    values = []
 
+    # Update tables
+    values = []
     for var in variables:
       if (var.has_value()):
         values.append(var.get_value())
       else:
         values.append(None)
-    
-    statement = '''INSERT INTO data1s ({}) VALUES ({});'''.format(
-        ','.join(variable_names), ','.join('?' for _ in values))
-    db.execute(statement, values)
-    db.commit()
+
+    for table in tables:
+      table.update(values)
 
 if __name__ == '__main__':
   main()

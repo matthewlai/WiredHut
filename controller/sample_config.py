@@ -25,7 +25,21 @@ TLS_PRIVATE_KEY_PATH='/path/to/privkey.pem'
 
 SQLITE_PATH='record.db'
 
+SQLITE_TABLE_CONFIGS = [
+  # (table name, update period in seconds, keep period in seconds)
+  ('data1s', 1, 30 * 60), # Every second for 30 minutes
+  ('data10s', 10, 24 * 60 * 60), # Every 10 seconds for 1 day
+  ('data1m', 60, 10 * 24 * 60 * 60), # Every minute for 10 days
+  ('data5m', 10 * 60, None), # Every 5 minutes forever
+  ('data1h', 60 * 60, None), # Every hour forever
+  ('data4h', 4 * 60 * 60, None), # Every 4 hours forever
+]
+
+# How many latest datapoints to use from each table in the charts
+DATAPOINTS_PER_TABLE=400
+
 HTTPS_PORT=8000
+HTTP_THREADS=4
 
 GARDEN_PORT=2938
 INDOOR_PORT=2939
