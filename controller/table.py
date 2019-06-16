@@ -39,7 +39,10 @@ class Aggregator():
   def get_aggregated_value(self, reset=False):
     if self.num_samples > 0:
       if self.aggregation_function == AggregationFunction.AVERAGE:
-        return_val = self.weighted_value_sum / self.total_duration
+        if self.total_duration == 0:
+          return_val = None
+        else:
+          return_val = self.weighted_value_sum / self.total_duration
       elif self.aggregation_function == AggregationFunction.MAJORITY:
         return_val = max(self.total_duration_by_value,
                    key=lambda key: self.total_duration_by_value[key])
