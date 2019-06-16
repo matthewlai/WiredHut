@@ -206,6 +206,11 @@ class DynamicVar():
             animationDuration: 0
         }},
         responsiveAnimationDuration: 0,
+        elements: {{
+          line: {{
+            tension: 0
+          }}
+        }},
         scales: {{
           xAxes: [{{
             type: 'time',

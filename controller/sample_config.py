@@ -36,7 +36,7 @@ SQLITE_TABLE_CONFIGS = [
 ]
 
 # How many latest datapoints to use from each table in the charts
-DATAPOINTS_PER_TABLE=400
+DATAPOINTS_PER_TABLE=200
 
 HTTPS_PORT=8000
 HTTP_THREADS=4
