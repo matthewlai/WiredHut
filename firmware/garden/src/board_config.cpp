@@ -6,12 +6,12 @@ namespace Ostrich {
 BoardConfig MakeBoardConfig() {
   BoardConfig bc;
 
-  bc.clock_scale = rcc_3v3[RCC_CLOCK_3V3_216MHZ];
+  bc.clock_scale = rcc_3v3[RCC_CLOCK_3V3_24MHZ];
   bc.hse_mhz = 12;
   bc.use_hse = true;
 
   // 1 ms.
-  bc.systick_period_clocks = 216000;
+  bc.systick_period_clocks = 24000;
 
   bc.vdd_voltage_mV = 3300;
 
