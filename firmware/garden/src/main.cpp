@@ -504,8 +504,7 @@ int main() {
       } else {
         int64_t time_since_last_water =
             time_now_seconds - last_watering_time_seconds;
-        if ((time_since_last_water > time_between_watering || 
-            (last_watering_time_seconds == 0 && time_now_seconds > 10)) && 
+        if ((time_since_last_water > time_between_watering) &&
             !low_water_level_lockout) {
           watering_now = true;
           watering_start_time = time_now_seconds;
