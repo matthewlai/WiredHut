@@ -35,6 +35,8 @@ constexpr int kDefaultTimeBetweenWatering = 2 * 24 * 60 * 60;
 constexpr float kDefaultMinWaterLevelM = 0.2f;
 constexpr float kDefaultMinWaterLevelRestartM = 0.5f; // Hysteresis.
 
+constexpr float kFullBatteryChargeAh = 40.0f;
+
 // Debug
 // Wait for USB serial port to be opened before starting (for debugging)
 constexpr bool kWaitForPortOpen = false;

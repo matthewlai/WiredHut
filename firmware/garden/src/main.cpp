@@ -240,7 +240,7 @@ int main() {
 
   // in Ah
   float state_of_charge_estimation = 0.0f;
-  bool state_of_charge_calibrated = false;
+  int64_t last_battery_current_reading_time_ms = 0;
 
   // We also store an unfiltered version of solar voltage for computing
   // current.
@@ -337,7 +337,14 @@ int main() {
         batt_voltage.AddValue(float(value) / 1000.0f);
       } else if (field_label == "I") {
         batt_current.AddValue(float(value) / 1000.0f);
-        state_of_charge_estimation += float(value) / 1000.0f / 60.0f / 60.0f;
+        int64_t time_now_ms = GetTimeMilliseconds();
+        if (last_battery_current_reading_time_ms != 0) {
+          float elapsed_time =
+              (time_now_ms - last_battery_current_reading_time_ms) / 1000.0f;
+          state_of_charge_estimation +=
+              float(value) / 1000.0f / 60.0f / 60.0f * elapsed_time;
+        }
+        last_battery_current_reading_time_ms = time_now_ms;
       } else if (field_label == "VPV") {
         solar_voltage.AddValue(float(value) / 1000.0f);
         solar_voltage_raw = float(value) / 1000.0f;
@@ -378,8 +385,7 @@ int main() {
             break;
           case 5:
             solar_mode = "FLOAT";
-            state_of_charge_estimation = 0.0f;
-            state_of_charge_calibrated = true;
+            state_of_charge_estimation = Config::kFullBatteryChargeAh;
             break;
           default:
             solar_mode = Format(value);
@@ -442,10 +448,8 @@ int main() {
         TrySend(&esp8266, Config::kGardenControllerLinkId, 
             "UPTIME " + Format(GetTimeMilliseconds() / 1000ULL) + "\n");
 
-        if (state_of_charge_calibrated) {
-          TrySend(&esp8266, Config::kGardenControllerLinkId, 
-              "SOC " + Format(int(state_of_charge_calibrated * 1000)) + "\n");
-        }
+        TrySend(&esp8266, Config::kGardenControllerLinkId, 
+            "SOC " + Format(int(state_of_charge_estimation * 1000)) + "\n");
 
         TrySend(&esp8266, Config::kGardenControllerLinkId, 
             "FORCE_STATE " + Format(int(time_now_seconds < force_state_end)) +
