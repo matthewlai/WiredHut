@@ -71,7 +71,7 @@ class GardenController():
         "Solar Power (W)", "garden_solar_power", format_str='{0:.1f}W')
     self.sol_mode = DynamicVar("Solar Mode", "garden_solar_mode", enum_values = ['OFF', 'FAULT', 'BULK', 'ABSORPTION', 'FLOAT'], dtype=str)
     self.mppt_mode = DynamicVar("Solar MPPT Mode", "garden_mppt_mode", enum_values = ['OFF', 'CVCI', 'MPPT'], dtype=str)
-    self.sol_err = DynamicVar("Solar Error", "garden_solar_error", dtype=str, enum_values=['0'])
+    self.sol_err = DynamicVar("Solar Error", "garden_solar_error", dtype=str, enum_values=['0', '1', '2', '3', '4'])
     self.batt_v = DynamicVar("Battery Voltage (V)", "garden_battery_voltage", format_str='{0:.3f}V')
     self.batt_i = DynamicVar("Battery Current (A)", "garden_battery_current", format_str='{0:.3f}A')
     self.soc = DynamicVar("Battery State of Charge (Ah)", "garden_soc", format_str='{0:.1f}Ah')
