@@ -140,7 +140,7 @@ class GardenController():
     elif value_type == 'TIME_BETWEEN_WATERING':
       self.time_between_watering.update(int(value))
     elif value_type == 'SOC':
-      self.soc.update(float(value))
+      self.soc.update(float(value) / 1000)
     else:
       self.logger.error("Received garden update with unknown field: {}".format(value_type))
 
