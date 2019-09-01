@@ -10,7 +10,7 @@ function apply_updates_loop(first_time) {
 
       // We set timeout here because there is no point queuing up more requests
       // if the previous one hasn't come back.
-      setTimeout(function(){ apply_updates_loop(false); }, 1000);
+      setTimeout(function(){ apply_updates_loop(false); }, 5000);
     }
   };
   var path = "/aggregated_updates";
