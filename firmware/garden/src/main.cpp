@@ -77,7 +77,7 @@ void SetPressureSensorPower(bool on) {
   pwr = 1;
   if (on) {
     pwr.SetOutputOptions(GPIO_OTYPE_OD, GPIO_OSPEED_2MHZ);
-    DelayMilliseconds(50);
+    DelayMilliseconds(500);
   } else {
     pwr.SetOutputOptions(GPIO_OTYPE_PP, GPIO_OSPEED_2MHZ);
   }
@@ -220,10 +220,10 @@ int main() {
   ReadSw1Current(&adc1);
 
   ThrottledExecutor send_update_throttle(1000);
-  ThrottledExecutor read_water_level_throttle(2000);
+  ThrottledExecutor read_water_level_throttle(10000);
 
   WindowFilteredValue<16> pump_current;
-  WindowFilteredValue<8> pressure_sensor_height;
+  WindowFilteredValue<16> pressure_sensor_height;
   WindowFilteredValue<16> soil_moisture;
   WindowFilteredValue<16> soil_temperature;
   WindowFilteredValue<16> mcu_temperature;
@@ -415,8 +415,11 @@ int main() {
 
     read_water_level_throttle.MaybeExecute([&]() {
       SetPressureSensorPower(true);
-      pressure_sensor_height.AddValue(
-          PressureSensorCurrentToHeightMm(ReadPressureSensorCurrent(&adc1)));
+      for (int i = 0; i < 16; ++i) {
+        pressure_sensor_height.AddValue(
+            PressureSensorCurrentToHeightMm(ReadPressureSensorCurrent(&adc1)));
+        DelayMilliseconds(10);
+      }
       SetPressureSensorPower(false);
     });
 
