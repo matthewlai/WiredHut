@@ -497,7 +497,7 @@ int main() {
       watering_now = force_state;
     } else {
       if (watering_now) {
-        if (pressure_sensor_height.AvgValue() < min_water_level_for_watering_m ||
+        if (low_water_level_lockout ||
             (time_now_seconds - watering_start_time) > water_time_seconds) {
           watering_now = false;
         }

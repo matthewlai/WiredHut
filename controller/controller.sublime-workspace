@@ -4,6 +4,10 @@
 		"selected_items":
 		[
 			[
+				"TIME_BETW",
+				"SET_TIME_BETWEEN_WATERING"
+			],
+			[
 				"kChannel",
 				"kChannel"
 			],
@@ -23,27 +27,69 @@
 			"file": "main.py",
 			"settings":
 			{
-				"buffer_size": 2906,
+				"buffer_size": 5959,
 				"encoding": "UTF-8",
-				"line_ending": "Unix"
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": ".gitignore",
+			"settings":
+			{
+				"buffer_size": 54,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "static/ajax.js",
+			"settings":
+			{
+				"buffer_size": 704,
+				"line_ending": "Windows"
 			}
 		},
 		{
 			"file": "garden.py",
 			"settings":
 			{
-				"buffer_size": 2178,
+				"buffer_size": 8253,
 				"encoding": "UTF-8",
-				"line_ending": "Unix"
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "dynamic_var.py",
+			"settings":
+			{
+				"buffer_size": 8147,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "indoor.py",
+			"settings":
+			{
+				"buffer_size": 4645,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "remote_handler.py",
+			"settings":
+			{
+				"buffer_size": 4063,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
 			}
 		},
 		{
 			"file": "stubs/garden_mcu.py",
 			"settings":
 			{
-				"buffer_size": 2478,
+				"buffer_size": 2981,
 				"encoding": "UTF-8",
-				"line_ending": "Unix"
+				"line_ending": "Windows"
 			}
 		},
 		{
@@ -59,9 +105,9 @@
 			"file": "http_server.py",
 			"settings":
 			{
-				"buffer_size": 5481,
+				"buffer_size": 7602,
 				"encoding": "UTF-8",
-				"line_ending": "Unix"
+				"line_ending": "Windows"
 			}
 		}
 	],
@@ -97,10 +143,15 @@
 	},
 	"expanded_folders":
 	[
-		"/home/matthewlai/Repositories/WiredHut/controller"
+		"/G/Repositories/WiredHut/controller",
+		"/G/Repositories/WiredHut/controller/static",
+		"/G/Repositories/WiredHut/controller/stubs"
 	],
 	"file_history":
 	[
+		"/G/Repositories/WiredHut/controller/stubs/indoor_mcu.py",
+		"/G/Repositories/WiredHut/controller/indoor.py",
+		"/G/Repositories/WiredHut/controller/credentials.txt",
 		"/home/matthewlai/Repositories/Ostrich/libostrich/include/adc.h",
 		"/home/matthewlai/Repositories/Ostrich/libostrich/src/adc.cpp",
 		"/home/matthewlai/Repositories/Ostrich/libostrich/include/adc_defs.h",
@@ -116,7 +167,7 @@
 	],
 	"find":
 	{
-		"height": 39.0
+		"height": 27.0
 	},
 	"find_in_files":
 	{
@@ -130,6 +181,9 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			"dtype",
+			"sol_err",
+			"logger",
 			"utc_to"
 		],
 		"highlight": true,
@@ -148,7 +202,7 @@
 	"groups":
 	[
 		{
-			"selected": 1,
+			"selected": 3,
 			"sheets":
 			[
 				{
@@ -157,15 +211,15 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 2906,
+						"buffer_size": 5959,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								2484,
-								2484
+								4959,
+								4959
 							]
 						],
 						"settings":
@@ -175,7 +229,7 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 769.0,
+						"translation.y": 1242.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 3,
@@ -183,47 +237,77 @@
 				},
 				{
 					"buffer": 1,
-					"file": "garden.py",
+					"file": ".gitignore",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 2178,
+						"buffer_size": 54,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								1999,
-								1999
+								38,
+								38
 							]
 						],
 						"settings":
 						{
-							"syntax": "Packages/Python/Python.sublime-syntax"
+							"syntax": "Packages/Git Formats/Git Ignore.sublime-syntax"
 						},
 						"translation.x": 0.0,
-						"translation.y": 374.0,
+						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 0,
+					"stack_index": 5,
 					"type": "text"
 				},
 				{
 					"buffer": 2,
-					"file": "stubs/garden_mcu.py",
+					"file": "static/ajax.js",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 2478,
+						"buffer_size": 704,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								1953,
-								1953
+								554,
+								554
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JavaScript.sublime-syntax",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 6,
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "garden.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 8253,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								2814,
+								2814
 							]
 						],
 						"settings":
@@ -233,14 +317,134 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 487.0,
+						"translation.y": 439.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "dynamic_var.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 8147,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								1858,
+								1863
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 486.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 1,
 					"type": "text"
 				},
 				{
-					"buffer": 3,
+					"buffer": 5,
+					"file": "indoor.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 4645,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								3712,
+								3712
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 1728.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 7,
+					"type": "text"
+				},
+				{
+					"buffer": 6,
+					"file": "remote_handler.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 4063,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								3707,
+								3707
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 1566.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				},
+				{
+					"buffer": 7,
+					"file": "stubs/garden_mcu.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 2981,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								2136,
+								2136
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 824.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 8,
+					"type": "text"
+				},
+				{
+					"buffer": 8,
 					"file": "util.py",
 					"semi_transient": false,
 					"settings":
@@ -264,24 +468,24 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 2,
+					"stack_index": 9,
 					"type": "text"
 				},
 				{
-					"buffer": 4,
+					"buffer": 9,
 					"file": "http_server.py",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 5481,
+						"buffer_size": 7602,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								2287,
-								2287
+								3828,
+								3828
 							]
 						],
 						"settings":
@@ -291,7 +495,7 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 2077.0,
+						"translation.y": 540.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 4,
@@ -302,7 +506,7 @@
 	],
 	"incremental_find":
 	{
-		"height": 26.0
+		"height": 27.0
 	},
 	"input":
 	{
@@ -339,7 +543,7 @@
 	"project": "controller.sublime-project",
 	"replace":
 	{
-		"height": 48.0
+		"height": 50.0
 	},
 	"save_all_on_build": true,
 	"select_file":
@@ -377,7 +581,7 @@
 	"show_open_files": false,
 	"show_tabs": true,
 	"side_bar_visible": true,
-	"side_bar_width": 226.0,
+	"side_bar_width": 197.0,
 	"status_bar_visible": true,
 	"template_settings":
 	{
