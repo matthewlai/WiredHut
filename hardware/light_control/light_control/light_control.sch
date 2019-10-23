@@ -1,4 +1,5 @@
 EESchema Schematic File Version 4
+LIBS:light_control-cache
 EELAYER 30 0
 EELAYER END
 $Descr A4 11693 8268
@@ -44,7 +45,7 @@ F 0 "U1" H 2950 1642 50  0000 C CNN
 F 1 "AZ1117-3.3" H 2950 1551 50  0000 C CNN
 F 2 "Package_TO_SOT_SMD:SOT-223-3_TabPin2" H 2950 1650 50  0001 C CIN
 F 3 "https://www.diodes.com/assets/Datasheets/AZ1117.pdf" H 2950 1400 50  0001 C CNN
-F 4 "C108492" H 2950 1400 50  0001 C CNN "Field4"
+F 4 "C92102" H 2950 1400 50  0001 C CNN "Field4"
 	1    2950 1400
 	1    0    0    -1  
 $EndComp
@@ -249,6 +250,7 @@ F 0 "U2" H 2750 2800 50  0000 C CNN
 F 1 "CP2104" H 3000 2800 50  0000 C CNN
 F 2 "Package_DFN_QFN:QFN-24-1EP_4x4mm_P0.5mm_EP2.6x2.6mm" H 3400 2800 50  0001 L CNN
 F 3 "https://www.silabs.com/documents/public/data-sheets/cp2104.pdf" H 2700 5000 50  0001 C CNN
+F 4 "C47742" H 3250 3750 50  0001 C CNN "Field4"
 	1    3250 3750
 	1    0    0    -1  
 $EndComp
@@ -1779,10 +1781,10 @@ DHT_IO
 Text Label 7000 3050 0    50   ~ 0
 DHT_IO
 $Comp
-L Device:R R?
+L Device:R R16
 U 1 1 5DDECBA7
 P 5150 6900
-F 0 "R?" H 5080 6854 50  0000 R CNN
+F 0 "R16" H 5080 6854 50  0000 R CNN
 F 1 "10kR" H 5080 6945 50  0000 R CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 5080 6900 50  0001 C CNN
 F 3 "~" H 5150 6900 50  0001 C CNN
@@ -1798,10 +1800,10 @@ Wire Wire Line
 	5250 7100 5150 7100
 Connection ~ 5150 7100
 $Comp
-L power:+3V3 #PWR?
+L power:+3V3 #PWR0144
 U 1 1 5DDFC007
 P 5150 6750
-F 0 "#PWR?" H 5150 6600 50  0001 C CNN
+F 0 "#PWR0144" H 5150 6600 50  0001 C CNN
 F 1 "+3V3" H 5165 6923 50  0000 C CNN
 F 2 "" H 5150 6750 50  0001 C CNN
 F 3 "" H 5150 6750 50  0001 C CNN
