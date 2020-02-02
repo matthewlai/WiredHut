@@ -1,0 +1,9 @@
+multi:
+  light_control:
+    gerbers: hardware/light_control/light_control/fab/
+    bom: hardware/light_control/light_control/light_control_bom_jlc.csv
+    readme: README.md
+  garden:
+    gerbers: hardware/garden/fab1/
+    bom: hardware/garden/garden.kicad_pcb
+    readme: README.md
