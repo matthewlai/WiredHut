@@ -77,6 +77,7 @@ void SetPressureSensorPower(bool on) {
   pwr = 1;
   if (on) {
     pwr.SetOutputOptions(GPIO_OTYPE_OD, GPIO_OSPEED_2MHZ);
+    DelayMilliseconds(500);
   } else {
     pwr.SetOutputOptions(GPIO_OTYPE_PP, GPIO_OSPEED_2MHZ);
   }
@@ -219,9 +220,10 @@ int main() {
   ReadSw1Current(&adc1);
 
   ThrottledExecutor send_update_throttle(1000);
+  ThrottledExecutor read_water_level_throttle(10000);
 
   WindowFilteredValue<16> pump_current;
-  WindowFilteredValue<64> pressure_sensor_height;
+  WindowFilteredValue<16> pressure_sensor_height;
   WindowFilteredValue<16> soil_moisture;
   WindowFilteredValue<16> soil_temperature;
   WindowFilteredValue<16> mcu_temperature;
@@ -238,7 +240,7 @@ int main() {
 
   // in Ah
   float state_of_charge_estimation = 0.0f;
-  bool state_of_charge_calibrated = false;
+  int64_t last_battery_current_reading_time_ms = 0;
 
   // We also store an unfiltered version of solar voltage for computing
   // current.
@@ -335,7 +337,14 @@ int main() {
         batt_voltage.AddValue(float(value) / 1000.0f);
       } else if (field_label == "I") {
         batt_current.AddValue(float(value) / 1000.0f);
-        state_of_charge_estimation += float(value) / 1000.0f / 60.0f / 60.0f;
+        int64_t time_now_ms = GetTimeMilliseconds();
+        if (last_battery_current_reading_time_ms != 0) {
+          float elapsed_time =
+              (time_now_ms - last_battery_current_reading_time_ms) / 1000.0f;
+          state_of_charge_estimation +=
+              float(value) / 1000.0f / 60.0f / 60.0f * elapsed_time;
+        }
+        last_battery_current_reading_time_ms = time_now_ms;
       } else if (field_label == "VPV") {
         solar_voltage.AddValue(float(value) / 1000.0f);
         solar_voltage_raw = float(value) / 1000.0f;
@@ -376,8 +385,7 @@ int main() {
             break;
           case 5:
             solar_mode = "FLOAT";
-            state_of_charge_estimation = 0.0f;
-            state_of_charge_calibrated = true;
+            state_of_charge_estimation = Config::kFullBatteryChargeAh;
             break;
           default:
             solar_mode = Format(value);
@@ -388,9 +396,6 @@ int main() {
     }
 
     SetLEDBinary(6);
-
-    pressure_sensor_height.AddValue(
-        PressureSensorCurrentToHeightMm(ReadPressureSensorCurrent(&adc1)));
 
     soil_temperature.AddValue(float(I2CReadRegister(&moisture_i2c,
                                     Config::kTemperatureRegister)) / 10.0f);
@@ -408,156 +413,110 @@ int main() {
 
     SetLEDBinary(8);
 
-    if (send_update_throttle.ExecuteNow() && esp8266) {
-      SetLEDBinary(9);
-
-      if (!esp8266->SendData(Config::kEnvironmentControllerLinkId, 
-          "TEMP " + Format(int(mcu_temperature.AvgValue() * 100)) +
-          " garden_mcu\n")) {
-        esp8266.reset();
-        break;
+    read_water_level_throttle.MaybeExecute([&]() {
+      SetPressureSensorPower(true);
+      for (int i = 0; i < 16; ++i) {
+        pressure_sensor_height.AddValue(
+            PressureSensorCurrentToHeightMm(ReadPressureSensorCurrent(&adc1)));
+        DelayMilliseconds(10);
       }
+      SetPressureSensorPower(false);
+    });
 
-      if (!esp8266->SendData(Config::kEnvironmentControllerLinkId, 
-          "TEMP " + Format(int(soil_temperature.AvgValue() * 100.0f)) +
-          " soil\n")) {
-        esp8266.reset();
-        break;
-      }
+    if (esp8266) {
+      send_update_throttle.MaybeExecute([&]() {
+        SetLEDBinary(9);
 
-      if (!esp8266->SendData(Config::kGardenControllerLinkId, 
-          "PUMP_ON " + Format(int(watering_now)) + "\n")) {
-        esp8266.reset();
-        break;
-      }
+        TrySend(&esp8266, Config::kEnvironmentControllerLinkId, 
+            "TEMP " + Format(int(mcu_temperature.AvgValue() * 100)) +
+            " garden_mcu\n");
 
-      if (!esp8266->SendData(Config::kGardenControllerLinkId, 
-          "PUMP_I " + Format(int(pump_current.AvgValue() * 1000)) + "\n")) {
-        esp8266.reset();
-        break;
-      }
+        TrySend(&esp8266, Config::kEnvironmentControllerLinkId, 
+            "TEMP " + Format(int(soil_temperature.AvgValue() * 100.0f)) +
+            " soil\n");
 
-      if (!esp8266->SendData(Config::kGardenControllerLinkId, 
-          "WATER_LEVEL " + Format(int(pressure_sensor_height.AvgValue() * 1000)) + "\n")) {
-        esp8266.reset();
-        break;
-      }
+        TrySend(&esp8266, Config::kGardenControllerLinkId, 
+            "PUMP_ON " + Format(int(watering_now)) + "\n");
 
-      if (!esp8266->SendData(Config::kGardenControllerLinkId, 
-          "SOIL_MOISTURE " + Format(int(soil_moisture.AvgValue())) + "\n")) {
-        esp8266.reset();
-        break;
-      }
+        TrySend(&esp8266, Config::kGardenControllerLinkId, 
+            "PUMP_I " + Format(int(pump_current.AvgValue() * 1000)) + "\n");
 
-      if (!esp8266->SendData(Config::kGardenControllerLinkId, 
-          "UPTIME " + Format(GetTimeMilliseconds() / 1000ULL) + "\n")) {
-        esp8266.reset();
-        break;
-      }
+        TrySend(&esp8266, Config::kGardenControllerLinkId, 
+            "WATER_LEVEL " +
+            Format(int(pressure_sensor_height.AvgValue() * 1000)) + "\n");
 
-      if (state_of_charge_calibrated) {
-        if (!esp8266->SendData(Config::kGardenControllerLinkId, 
-            "SOC " + Format(int(state_of_charge_calibrated * 1000)) + "\n")) {
-          esp8266.reset();
-          break;
-        }
-      }
+        TrySend(&esp8266, Config::kGardenControllerLinkId, 
+            "SOIL_MOISTURE " + Format(int(soil_moisture.AvgValue())) + "\n");
 
-      if (!esp8266->SendData(Config::kGardenControllerLinkId, 
-          "FORCE_STATE " + Format(int(time_now_seconds < force_state_end)) + "\n")) {
-        esp8266.reset();
-        break;
-      }
+        TrySend(&esp8266, Config::kGardenControllerLinkId, 
+            "UPTIME " + Format(GetTimeMilliseconds() / 1000ULL) + "\n");
 
-      if (!esp8266->SendData(Config::kGardenControllerLinkId, 
-          "WATER_TIME " + Format(water_time_seconds) + "\n")) {
-        esp8266.reset();
-        break;
-      }
+        TrySend(&esp8266, Config::kGardenControllerLinkId, 
+            "SOC " + Format(int(state_of_charge_estimation * 1000)) + "\n");
 
-      if (!esp8266->SendData(Config::kGardenControllerLinkId, 
-          "TIME_BETWEEN_WATERING " + Format(time_between_watering) + "\n")) {
-        esp8266.reset();
-        break;
-      }
+        TrySend(&esp8266, Config::kGardenControllerLinkId, 
+            "FORCE_STATE " + Format(int(time_now_seconds < force_state_end)) +
+            "\n");
 
-      if (solar_data_ready) {
-        if (!esp8266->SendData(Config::kGardenControllerLinkId, 
-            "SOL_V " + Format(int(solar_voltage.AvgValue() * 1000)) + "\n")) {
-          esp8266.reset();
-          break;
-        }
+        TrySend(&esp8266, Config::kGardenControllerLinkId, 
+            "WATER_TIME " + Format(water_time_seconds) + "\n");
 
-        if (!esp8266->SendData(Config::kGardenControllerLinkId, 
-            "SOL_I " + Format(int(solar_current.AvgValue() * 1000)) + "\n")) {
-          esp8266.reset();
-          break;
+        TrySend(&esp8266, Config::kGardenControllerLinkId, 
+            "TIME_BETWEEN_WATERING " + Format(time_between_watering) + "\n");
+
+        if (solar_data_ready) {
+          TrySend(&esp8266, Config::kGardenControllerLinkId, 
+              "SOL_V " + Format(int(solar_voltage.AvgValue() * 1000)) + "\n");
+
+          TrySend(&esp8266, Config::kGardenControllerLinkId, 
+              "SOL_I " + Format(int(solar_current.AvgValue() * 1000)) + "\n");
+
+          TrySend(&esp8266, Config::kGardenControllerLinkId, 
+              "BATT_V " + Format(int(batt_voltage.AvgValue() * 1000)) + "\n");
+
+          TrySend(&esp8266, Config::kGardenControllerLinkId, 
+              "BATT_I " + Format(int(batt_current.AvgValue() * 1000)) + "\n");
+
+          TrySend(&esp8266, Config::kGardenControllerLinkId, 
+              "LOAD_I " + Format(int(load_current.AvgValue() * 1000)) + "\n");
+
+          TrySend(&esp8266, Config::kGardenControllerLinkId, 
+              "SOL_MODE " + solar_mode + "\n");
+
+          TrySend(&esp8266, Config::kGardenControllerLinkId, 
+              "MPPT_MODE " + mppt_mode + "\n");
+
+          TrySend(&esp8266, Config::kGardenControllerLinkId, 
+              "SOL_ERR " + Format(solar_error_code) + "\n");
+
+          solar_data_ready = false;
         }
 
-        if (!esp8266->SendData(Config::kGardenControllerLinkId, 
-            "BATT_V " + Format(int(batt_voltage.AvgValue() * 1000)) + "\n")) {
-          esp8266.reset();
-          break;
-        }
-
-        if (!esp8266->SendData(Config::kGardenControllerLinkId, 
-            "BATT_I " + Format(int(batt_current.AvgValue() * 1000)) + "\n")) {
-          esp8266.reset();
-          break;
-        }
-
-        if (!esp8266->SendData(Config::kGardenControllerLinkId, 
-            "LOAD_I " + Format(int(load_current.AvgValue() * 1000)) + "\n")) {
-          esp8266.reset();
-          break;
-        }
-
-        if (!esp8266->SendData(Config::kGardenControllerLinkId, 
-            "SOL_MODE " + solar_mode + "\n")) {
-          esp8266.reset();
-          break;
-        }
-
-        if (!esp8266->SendData(Config::kGardenControllerLinkId, 
-            "MPPT_MODE " + mppt_mode + "\n")) {
-          esp8266.reset();
-          break;
-        }
-
-        if (!esp8266->SendData(Config::kGardenControllerLinkId, 
-            "SOL_ERR " + Format(solar_error_code) + "\n")) {
-          esp8266.reset();
-          break;
-        }
-
-        solar_data_ready = false;
-      }
-
-      SetLEDBinary(9);
+        SetLEDBinary(9);
+      });
     }
 
     if (time_now_seconds < force_state_end) {
-      SetPump(force_state);
+      watering_now = force_state;
     } else {
       if (watering_now) {
-        if (pressure_sensor_height.AvgValue() < min_water_level_for_watering_m ||
+        if (low_water_level_lockout ||
             (time_now_seconds - watering_start_time) > water_time_seconds) {
           watering_now = false;
         }
       } else {
         int64_t time_since_last_water =
             time_now_seconds - last_watering_time_seconds;
-        if ((time_since_last_water > time_between_watering || 
-            (last_watering_time_seconds == 0 && time_now_seconds > 10)) && 
+        if ((time_since_last_water > time_between_watering) &&
             !low_water_level_lockout) {
           watering_now = true;
           watering_start_time = time_now_seconds;
           last_watering_time_seconds = time_now_seconds;
         }
       }
-
-      SetPump(watering_now);
     }
+
+    SetPump(watering_now);
 
     if (pressure_sensor_height.AvgValue() < min_water_level_for_watering_m) {
       low_water_level_lockout = true;
@@ -568,6 +527,8 @@ int main() {
     }
 
     StrokeWDG();
+
+    SetLEDBinary(0);
     
     DelayMilliseconds(100);
   }

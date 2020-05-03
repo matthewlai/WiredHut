@@ -240,4 +240,19 @@ class ESP8266 {
   OutputPin<PIN_G13> reset_;
 };
 
+// Try sending data if esp if not nullptr, and reset esp if sending failed.
+template <typename ESP8266_t>
+inline bool TrySend(std::unique_ptr<ESP8266_t>* esp, int link_id,
+                    const std::string& data) {
+  if (*esp) {
+    bool success = (*esp)->SendData(link_id, data);
+    if (!success) {
+      esp->reset();
+    }
+    return success;
+  } else {
+    return false;
+  }
+}
+
 #endif // __ESP8266_H__

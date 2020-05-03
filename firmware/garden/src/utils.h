@@ -31,10 +31,12 @@ class ThrottledExecutor {
   ThrottledExecutor(int64_t min_period_ms)
       : min_period_ms_(min_period_ms), next_execute_time_(0) {}
 
-  bool ExecuteNow() {
+  template <typename F>
+  bool MaybeExecute(F f) {
     auto time_now = Ostrich::GetTimeMilliseconds();
     if (time_now > next_execute_time_) {
       next_execute_time_ = time_now + min_period_ms_;
+      f();
       return true;
     } else {
       return false;
