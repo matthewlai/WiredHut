@@ -1,0 +1,557 @@
+( { EESchema Netlist Version 1.1  Mon 03 Aug 2020 14:55:09 BST
+Eeschema 5.1.6-c6e7f7d~87~ubuntu18.04.1}
+ ( 58AF1188 LED_SMD:LED_0603_1608Metric D3 GREEN
+  ( 1 Net-(D3-Pad1) )
+  ( 2 +3V3 )
+ )
+ ( 58AF156C Resistor_SMD:R_0402_1005Metric R7 100R
+  ( 1 /LED0 )
+  ( 2 Net-(D3-Pad1) )
+ )
+ ( 58AF1974 Resistor_SMD:R_0402_1005Metric R8 100R
+  ( 1 /LED1 )
+  ( 2 Net-(D4-Pad1) )
+ )
+ ( 58AF1A16 Resistor_SMD:R_0402_1005Metric R9 100R
+  ( 1 /LED2 )
+  ( 2 Net-(D5-Pad1) )
+ )
+ ( 58AF1ACF Resistor_SMD:R_0402_1005Metric R10 100R
+  ( 1 /LED3 )
+  ( 2 Net-(D6-Pad1) )
+ )
+ ( 58AF4CDB LED_SMD:LED_0603_1608Metric D4 RED
+  ( 1 Net-(D4-Pad1) )
+  ( 2 +3V3 )
+ )
+ ( 58AF4D81 LED_SMD:LED_0603_1608Metric D5 GREEN
+  ( 1 Net-(D5-Pad1) )
+  ( 2 +3V3 )
+ )
+ ( 58AF4E26 LED_SMD:LED_0603_1608Metric D6 RED
+  ( 1 Net-(D6-Pad1) )
+  ( 2 +3V3 )
+ )
+ ( 58B183F5 MountingHole:MountingHole_6.4mm_M6 M2 CONN_01X01
+  ( 1 ? )
+ )
+ ( 58B18BFB MountingHole:MountingHole_6.4mm_M6 M3 CONN_01X01
+  ( 1 ? )
+ )
+ ( 58B18CBD MountingHole:MountingHole_6.4mm_M6 M4 CONN_01X01
+  ( 1 ? )
+ )
+ ( 58B18D8A MountingHole:MountingHole_6.4mm_M6 M5 CONN_01X01
+  ( 1 ? )
+ )
+ ( 5CED2123 TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-3-2-5.08_1x02_P5.08mm_Horizontal J2 CONN_01X02
+  ( 1 /BATT_SHUNT_N )
+  ( 2 GND )
+ )
+ ( 5CF05150 Package_TO_SOT_SMD:TO-252-2 Q2 Q_NMOS_GDS
+  ( 1 /SW0_GATE )
+  ( 2 Net-(D8-Pad2) )
+  ( 3 GND )
+ )
+ ( 5CEC2762 Package_TO_SOT_SMD:TO-252-2 Q3 Q_NMOS_GDS
+  ( 1 /SW1_GATE )
+  ( 2 Net-(D9-Pad2) )
+  ( 3 GND )
+ )
+ ( 5CEC54DE TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-3-2-5.08_1x02_P5.08mm_Horizontal J4 CONN_01X02
+  ( 1 +12V )
+  ( 2 Net-(D8-Pad2) )
+ )
+ ( 5CEC603F TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-3-2-5.08_1x02_P5.08mm_Horizontal J5 CONN_01X02
+  ( 1 +12V )
+  ( 2 Net-(D9-Pad2) )
+ )
+ ( 5CF68BFE Resistor_SMD:R_0603_1608Metric R6 2.2R
+  ( 1 /PRES_SHUNT_N )
+  ( 2 /PRES_SHUNT_P )
+ )
+ ( 5CF6C96D Capacitor_SMD:C_0402_1005Metric C20 0.1uF
+  ( 1 +3V3 )
+  ( 2 GND )
+ )
+ ( 5CF73496 TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-3-2-5.08_1x02_P5.08mm_Horizontal J6 CONN_01X02
+  ( 1 /PRES_SHUNT_N )
+  ( 2 Net-(J6-Pad2) )
+ )
+ ( 5CFAD60F Connector_JST:JST_PH_B4B-PH-SM4-TB_1x04-1MP_P2.00mm_Vertical J1 CONN_01X04
+  ( 1 GND )
+  ( 2 /VD_RX )
+  ( 3 Net-(J1-Pad3) )
+  ( 4 ? )
+ )
+ ( 5CFD5B9F TerminalBlock_Phoenix:TerminalBlock_Phoenix_MPT-0,5-4-2.54_1x04_P2.54mm_Horizontal J7 CONN_01X04
+  ( 1 +3V3 )
+  ( 2 /SDA_EXT )
+  ( 3 /SCL_EXT )
+  ( 4 GND )
+ )
+ ( 5CFD78CD TerminalBlock_Phoenix:TerminalBlock_Phoenix_MPT-0,5-4-2.54_1x04_P2.54mm_Horizontal J8 CONN_01X04
+  ( 1 +3V3 )
+  ( 2 /SDA_EXT )
+  ( 3 /SCL_EXT )
+  ( 4 GND )
+ )
+ ( 5CFE3ECE Resistor_SMD:R_0402_1005Metric R11 1kR
+  ( 1 +3V3 )
+  ( 2 /SDA_EXT )
+ )
+ ( 5CFE433D Resistor_SMD:R_0402_1005Metric R12 1kR
+  ( 1 +3V3 )
+  ( 2 /SCL_EXT )
+ )
+ ( 5CEE8A17 Diode_SMD:D_SOD-123 D9 D_Schottky
+  ( 1 +12V )
+  ( 2 Net-(D9-Pad2) )
+ )
+ ( 5F151B44 Resistor_SMD:R_0402_1005Metric R3 1kR
+  ( 1 Net-(J1-Pad3) )
+  ( 2 /VD_TX )
+ )
+ ( 5F152029 Resistor_SMD:R_0402_1005Metric R13 2kR
+  ( 1 /VD_TX )
+  ( 2 GND )
+ )
+ ( 5F2573F9 TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-3-2-5.08_1x02_P5.08mm_Horizontal J3 CONN_01X02
+  ( 1 +12V )
+  ( 2 GND )
+ )
+ ( 5F2605F4 Resistor_SMD:R_2512_6332Metric R2 12mR
+  ( 1 +12V )
+  ( 2 /BATT_SHUNT_N )
+ )
+ ( 5F2A5134 Capacitor_SMD:C_0402_1005Metric C1 0.1uF
+  ( 1 +3V3 )
+  ( 2 GND )
+ )
+ ( 5F220E5A Connector_USB:USB_Micro-B_Molex-105017-0001 J9 USB_B_Micro
+  ( 1 Net-(D10-Pad2) )
+  ( 2 Net-(J9-Pad2) )
+  ( 3 Net-(J9-Pad3) )
+  ( 4 ? )
+  ( 5 GND )
+  ( 6 GND )
+ )
+ ( 5F220EB5 Capacitor_SMD:C_0402_1005Metric C4 0.1uF
+  ( 1 +3V3 )
+  ( 2 GND )
+ )
+ ( 5F220EBC Capacitor_SMD:C_0402_1005Metric C3 1uF
+  ( 1 +3V3 )
+  ( 2 GND )
+ )
+ ( 5F220EE5 Resistor_SMD:R_0402_1005Metric R16 10kR
+  ( 1 Net-(Q1-Pad1) )
+  ( 2 /USB_DTR )
+ )
+ ( 5F220EEC Resistor_SMD:R_0402_1005Metric R17 10kR
+  ( 1 Net-(Q4-Pad1) )
+  ( 2 /USB_RTS )
+ )
+ ( 5F220EF5 Package_TO_SOT_SMD:SOT-23 Q1 Q_NPN_BEC
+  ( 1 Net-(Q1-Pad1) )
+  ( 2 /USB_RTS )
+  ( 3 /EN )
+ )
+ ( 5F220EFC Package_TO_SOT_SMD:SOT-23 Q4 Q_NPN_BEC
+  ( 1 Net-(Q4-Pad1) )
+  ( 2 /USB_DTR )
+  ( 3 /IO0 )
+ )
+ ( 5F220F1B Switch:SW_Push_1P1T_NO_5.1x5.1mm SW1 SW_Push
+  ( 1 /EN )
+  ( 2 GND )
+ )
+ ( 5F220F22 Capacitor_SMD:C_0402_1005Metric C6 0.1uF
+  ( 1 /EN )
+  ( 2 GND )
+ )
+ ( 5F220F29 Resistor_SMD:R_0402_1005Metric R18 10kR
+  ( 1 /EN )
+  ( 2 +3V3 )
+ )
+ ( 5F2F5E09 Capacitor_SMD:C_0402_1005Metric C9 10uF
+  ( 1 +3V3 )
+  ( 2 GND )
+ )
+ ( 5F2FD8C1 Capacitor_SMD:C_0402_1005Metric C10 0.1uF
+  ( 1 +3V3 )
+  ( 2 GND )
+ )
+ ( 5F3C1C26 Package_TO_SOT_SMD:TO-252-2 Q5 Q_NMOS_GDS
+  ( 1 /PRESSURE_SW_GATE )
+  ( 2 Net-(J6-Pad2) )
+  ( 3 GND )
+ )
+ ( 5F46028B Package_TO_SOT_SMD:SOT-23-5 U7 MCP1416
+  ( 1 ? )
+  ( 2 +12V )
+  ( 3 /PRESSURE_PWR )
+  ( 4 GND )
+  ( 5 Net-(C13-Pad2) )
+ )
+ ( 5CED0D28 Diode_SMD:D_SOD-123 D8 D_Schottky
+  ( 1 +12V )
+  ( 2 Net-(D8-Pad2) )
+ )
+ ( 5F4B8461 Diode_SMD:D_SOD-323F D1 D
+  ( 1 Net-(C13-Pad1) )
+  ( 2 +12V )
+ )
+ ( 5F4BB64D Capacitor_SMD:C_0805_2012Metric C13 1uF/50V
+  ( 1 Net-(C13-Pad1) )
+  ( 2 Net-(C13-Pad2) )
+ )
+ ( 5F53D403 Diode_SMD:D_SOD-323F D2 D
+  ( 1 /PRES_SHUNT_P )
+  ( 2 Net-(C13-Pad1) )
+ )
+ ( 5F54C69A Capacitor_SMD:C_1206_3216Metric C14 10uF/50V
+  ( 1 /PRES_SHUNT_P )
+  ( 2 GND )
+ )
+ ( 5F5969FD Capacitor_SMD:C_0805_2012Metric C12 1uF/50V
+  ( 1 +12V )
+  ( 2 GND )
+ )
+ ( 5F5971AE Capacitor_SMD:C_0603_1608Metric C11 0.1uF/50V
+  ( 1 +12V )
+  ( 2 GND )
+ )
+ ( 5F5CD7CD Package_TO_SOT_SMD:SOT-23-6 U9 MP2451DT
+  ( 1 Net-(C16-Pad1) )
+  ( 2 GND )
+  ( 3 Net-(C17-Pad1) )
+  ( 4 Net-(R5-Pad2) )
+  ( 5 +12V )
+  ( 6 Net-(C16-Pad2) )
+ )
+ ( 5F5D2579 Capacitor_SMD:C_0603_1608Metric C16 0.1uF/50V
+  ( 1 Net-(C16-Pad1) )
+  ( 2 Net-(C16-Pad2) )
+ )
+ ( 5F5FECDC Resistor_SMD:R_0402_1005Metric R5 100kR
+  ( 1 +12V )
+  ( 2 Net-(R5-Pad2) )
+ )
+ ( 5F63FCAA Capacitor_SMD:C_0805_2012Metric C15 22uF
+  ( 1 +12V )
+  ( 2 GND )
+ )
+ ( 5F640622 Capacitor_SMD:C_0402_1005Metric C21 10uF
+  ( 1 /3V3_SHUNT_P )
+  ( 2 GND )
+ )
+ ( 5F641B4F Resistor_SMD:R_0402_1005Metric R22 124kR
+  ( 1 /3V3_SHUNT_P )
+  ( 2 Net-(C17-Pad1) )
+ )
+ ( 5F642BBF Resistor_SMD:R_0603_1608Metric R23 40.2kR
+  ( 1 Net-(C17-Pad1) )
+  ( 2 GND )
+ )
+ ( 5F683C81 Capacitor_SMD:C_0402_1005Metric C17 33pF
+  ( 1 Net-(C17-Pad1) )
+  ( 2 GND )
+ )
+ ( 5F6A8B25 MWSA0603:MWSA0603 L1 4.7uH
+  ( 1 Net-(C16-Pad2) )
+  ( 2 /3V3_SHUNT_P )
+ )
+ ( 5F6AEDD1 Diode_SMD:D_SMA D7 D_Schottky
+  ( 1 Net-(C16-Pad2) )
+  ( 2 GND )
+ )
+ ( 5F776EEF Sensor:Aosong_DHT11_5.5x12.0_P2.54mm U10 DHT11
+  ( 1 +3V3 )
+  ( 2 /DHT22 )
+  ( 3 ? )
+  ( 4 GND )
+ )
+ ( 5F7B7BD2 Resistor_SMD:R_0402_1005Metric R24 10kR
+  ( 1 /DHT22 )
+  ( 2 +3V3 )
+ )
+ ( 5F8197BC Capacitor_SMD:C_0402_1005Metric C22 0.1uF
+  ( 1 +3V3 )
+  ( 2 GND )
+ )
+ ( 5FB1DE53 Resistor_SMD:R_0402_1005Metric R25 470R
+  ( 1 /USB_RX )
+  ( 2 Net-(R25-Pad2) )
+ )
+ ( 5FB58B5F RF_Module:ESP32-WROOM-32 U4 ESP32-WROOM-32
+  ( 1 GND )
+  ( 2 +3V3 )
+  ( 3 /EN )
+  ( 4 /I36 )
+  ( 5 /I39 )
+  ( 6 /ALERT )
+  ( 7 /I35 )
+  ( 8 /SCL )
+  ( 9 /SDA )
+  ( 10 /DHT22 )
+  ( 11 /SCL_EXT )
+  ( 12 /SDA_EXT )
+  ( 13 ? )
+  ( 14 /PRESSURE_SW )
+  ( 15 GND )
+  ( 16 /PRESSURE_PWR )
+  ( 17 ? )
+  ( 18 ? )
+  ( 19 ? )
+  ( 20 ? )
+  ( 21 ? )
+  ( 22 ? )
+  ( 23 ? )
+  ( 24 /SW1 )
+  ( 25 /IO0 )
+  ( 26 /SW0 )
+  ( 27 /VD_TX )
+  ( 28 Net-(R26-Pad2) )
+  ( 29 /IO5 )
+  ( 30 /IO18 )
+  ( 31 /LED0 )
+  ( 32 ? )
+  ( 33 /LED1 )
+  ( 34 /USB_TX )
+  ( 35 Net-(R25-Pad2) )
+  ( 36 /LED2 )
+  ( 37 /LED3 )
+  ( 38 GND )
+  ( 39 GND )
+ )
+ ( 5FE536C1 Resistor_SMD:R_0402_1005Metric R26 470R
+  ( 1 /VD_RX )
+  ( 2 Net-(R26-Pad2) )
+ )
+ ( 60008E35 Package_TO_SOT_THT:TO-220-3_Vertical U11 AZ1117-3.3
+ )
+ ( 6000B45C Capacitor_SMD:C_0402_1005Metric C8 10uF
+  ( 1 +3V3 )
+  ( 2 GND )
+ )
+ ( 60033D26 Capacitor_SMD:C_0805_2012Metric C7 22uF
+  ( 1 +12V )
+  ( 2 GND )
+ )
+ ( 60164414 Resistor_SMD:R_0402_1005Metric R31 10kR
+  ( 1 GND )
+  ( 2 /PRESSURE_PWR )
+ )
+ ( 6019864B Package_TO_SOT_SMD:SOT-23-5 U12 MCP1416
+  ( 1 ? )
+  ( 2 +12V )
+  ( 3 /PRESSURE_SW )
+  ( 4 GND )
+  ( 5 /PRESSURE_SW_GATE )
+ )
+ ( 601CD64A Resistor_SMD:R_0402_1005Metric R14 10kR
+  ( 1 GND )
+  ( 2 /PRESSURE_SW )
+ )
+ ( 601E569B Capacitor_SMD:C_0805_2012Metric C24 1uF/50V
+  ( 1 +12V )
+  ( 2 GND )
+ )
+ ( 6020C74C Capacitor_SMD:C_0603_1608Metric C23 0.1uF/50V
+  ( 1 +12V )
+  ( 2 GND )
+ )
+ ( 602D46EE Capacitor_SMD:C_0805_2012Metric C26 1uF/50V
+  ( 1 +12V )
+  ( 2 GND )
+ )
+ ( 602D4703 Capacitor_SMD:C_0603_1608Metric C25 0.1uF/50V
+  ( 1 +12V )
+  ( 2 GND )
+ )
+ ( 602F07BB Capacitor_SMD:C_0805_2012Metric C28 1uF/50V
+  ( 1 +12V )
+  ( 2 GND )
+ )
+ ( 602F07D0 Capacitor_SMD:C_0603_1608Metric C27 0.1uF/50V
+  ( 1 +12V )
+  ( 2 GND )
+ )
+ ( 603950D8 Package_TO_SOT_SMD:SOT-23-5 U13 MCP1416
+  ( 1 ? )
+  ( 2 +12V )
+  ( 3 /SW0 )
+  ( 4 GND )
+  ( 5 /SW0_GATE )
+ )
+ ( 603950F7 Resistor_SMD:R_0402_1005Metric R15 10kR
+  ( 1 GND )
+  ( 2 /SW0 )
+ )
+ ( 603E8CAE Package_TO_SOT_SMD:SOT-23-5 U14 MCP1416
+  ( 1 ? )
+  ( 2 +12V )
+  ( 3 /SW1 )
+  ( 4 GND )
+  ( 5 /SW1_GATE )
+ )
+ ( 603E8CCD Resistor_SMD:R_0402_1005Metric R21 10kR
+  ( 1 GND )
+  ( 2 /SW1 )
+ )
+ ( 604EAEC2 Package_SO:VSSOP-10_3x3mm_P0.5mm U1 INA226
+  ( 1 GND )
+  ( 2 GND )
+  ( 3 /ALERT )
+  ( 4 /SDA )
+  ( 5 /SCL )
+  ( 6 +3V3 )
+  ( 7 GND )
+  ( 8 +12V )
+  ( 9 /BATT_SHUNT_N )
+  ( 10 +12V )
+ )
+ ( 6066A8F1 Resistor_SMD:R_0402_1005Metric R19 2.2kR
+  ( 1 +3V3 )
+  ( 2 /ALERT )
+ )
+ ( 6066AD6C Resistor_SMD:R_0402_1005Metric R4 2.2kR
+  ( 1 +3V3 )
+  ( 2 /SDA )
+ )
+ ( 6066AF85 Resistor_SMD:R_0402_1005Metric R1 2.2kR
+  ( 1 +3V3 )
+  ( 2 /SCL )
+ )
+ ( 60823A63 Package_SO:VSSOP-10_3x3mm_P0.5mm U2 INA226
+  ( 1 +3V3 )
+  ( 2 GND )
+  ( 3 /ALERT )
+  ( 4 /SDA )
+  ( 5 /SCL )
+  ( 6 +3V3 )
+  ( 7 GND )
+  ( 8 /PRES_SHUNT_P )
+  ( 9 /PRES_SHUNT_P )
+  ( 10 /PRES_SHUNT_N )
+ )
+ ( 609F674D Capacitor_SMD:C_0402_1005Metric C2 0.1uF
+  ( 1 +3V3 )
+  ( 2 GND )
+ )
+ ( 609F676C Package_SO:VSSOP-10_3x3mm_P0.5mm U5 INA226
+  ( 1 +3V3 )
+  ( 2 +3V3 )
+  ( 3 /ALERT )
+  ( 4 /SDA )
+  ( 5 /SCL )
+  ( 6 +3V3 )
+  ( 7 GND )
+  ( 8 +3V3 )
+  ( 9 /3V3_SHUNT_N )
+  ( 10 /3V3_SHUNT_P )
+ )
+ ( 60A3BBBC Resistor_SMD:R_1206_3216Metric R20 0.1R
+  ( 1 /3V3_SHUNT_N )
+  ( 2 /3V3_SHUNT_P )
+ )
+ ( 60B8D19E TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-3-9-5.08_1x09_P5.08mm_Horizontal J10 CONN_01X09
+  ( 1 GND )
+  ( 2 GND )
+  ( 3 /IO5 )
+  ( 4 /IO18 )
+  ( 5 /I35 )
+  ( 6 /I36 )
+  ( 7 /I39 )
+  ( 8 +3V3 )
+  ( 9 +3V3 )
+ )
+ ( 60BD1FFC TestPoint:TestPoint_Loop_D3.50mm_Drill1.4mm_Beaded TP1 TestPoint
+  ( 1 +3V3 )
+ )
+ ( 60BD6BF4 TestPoint:TestPoint_Loop_D3.50mm_Drill1.4mm_Beaded TP2 TestPoint
+  ( 1 GND )
+ )
+ ( 60BE081E TestPoint:TestPoint_Loop_D3.50mm_Drill1.4mm_Beaded TP3 TestPoint
+  ( 1 /PRES_SHUNT_P )
+ )
+ ( 60BE38B7 TestPoint:TestPoint_Loop_D3.50mm_Drill1.4mm_Beaded TP4 TestPoint
+  ( 1 GND )
+ )
+ ( 60C033A0 TestPoint:TestPoint_Loop_D3.50mm_Drill1.4mm_Beaded TP5 TestPoint
+  ( 1 /SW0_GATE )
+ )
+ ( 60C207A7 TestPoint:TestPoint_Loop_D3.50mm_Drill1.4mm_Beaded TP6 TestPoint
+  ( 1 /SCL_EXT )
+ )
+ ( 60C253B2 TestPoint:TestPoint_Loop_D3.50mm_Drill1.4mm_Beaded TP7 TestPoint
+  ( 1 /SDA_EXT )
+ )
+ ( 60C25A81 TestPoint:TestPoint_Loop_D3.50mm_Drill1.4mm_Beaded TP8 TestPoint
+  ( 1 /SCL )
+ )
+ ( 60C25E28 TestPoint:TestPoint_Loop_D3.50mm_Drill1.4mm_Beaded TP9 TestPoint
+  ( 1 /SDA )
+ )
+ ( 60C7A069 TestPoint:TestPoint_Loop_D3.50mm_Drill1.4mm_Beaded TP10 TestPoint
+  ( 1 GND )
+ )
+ ( 60C95E5F TestPoint:TestPoint_Loop_D3.50mm_Drill1.4mm_Beaded TP11 TestPoint
+  ( 1 /ALERT )
+ )
+ ( 60CAE6C6 TestPoint:TestPoint_Loop_D3.50mm_Drill1.4mm_Beaded TP12 TestPoint
+  ( 1 +12V )
+ )
+ ( 60CB20E2 TestPoint:TestPoint_Loop_D3.50mm_Drill1.4mm_Beaded TP13 TestPoint
+  ( 1 GND )
+ )
+ ( 60CBC4AA Jumper:SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm JP1 Jumper
+  ( 1 /3V3_SHUNT_N )
+  ( 2 +3V3 )
+ )
+ ( 60D489B4 Package_DFN_QFN:QFN-28-1EP_5x5mm_P0.5mm_EP3.35x3.35mm U3 CP2102
+  ( 1 ? )
+  ( 2 ? )
+  ( 3 GND )
+  ( 4 Net-(J9-Pad3) )
+  ( 5 Net-(J9-Pad2) )
+  ( 6 +3V3 )
+  ( 7 +3V3 )
+  ( 8 Net-(D10-Pad2) )
+  ( 9 Net-(R28-Pad1) )
+  ( 10 ? )
+  ( 11 ? )
+  ( 12 ? )
+  ( 13 ? )
+  ( 14 ? )
+  ( 15 ? )
+  ( 16 ? )
+  ( 17 ? )
+  ( 18 ? )
+  ( 19 ? )
+  ( 20 ? )
+  ( 21 ? )
+  ( 22 ? )
+  ( 23 ? )
+  ( 24 /USB_RTS )
+  ( 25 /USB_RX )
+  ( 26 /USB_TX )
+  ( 27 ? )
+  ( 28 /USB_DTR )
+  ( 29 GND )
+ )
+ ( 60F50194 Diode_SMD:D_SOD-323F D10 D
+  ( 1 +12V )
+  ( 2 Net-(D10-Pad2) )
+ )
+ ( 60F6C02E Resistor_SMD:R_0402_1005Metric R27 10kR
+  ( 1 GND )
+  ( 2 Net-(D10-Pad2) )
+ )
+ ( 60F9A041 Resistor_SMD:R_0402_1005Metric R28 10kR
+  ( 1 Net-(R28-Pad1) )
+  ( 2 +3V3 )
+ )
+)
+*

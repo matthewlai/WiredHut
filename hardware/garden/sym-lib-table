@@ -7,4 +7,5 @@
   (lib (name esp-11)(type Legacy)(uri ${KIPRJMOD}/library/esp-11.lib)(options "")(descr ""))
   (lib (name micro_sd_card_cd)(type Legacy)(uri ${KIPRJMOD}/library/micro_sd_card_cd.lib)(options "")(descr ""))
   (lib (name ostrich-rescue)(type Legacy)(uri ${KIPRJMOD}/garden-rescue.lib)(options "")(descr ""))
+  (lib (name mp2451)(type Legacy)(uri ${KIPRJMOD}/library/mp2451.lib)(options "")(descr ""))
 )
