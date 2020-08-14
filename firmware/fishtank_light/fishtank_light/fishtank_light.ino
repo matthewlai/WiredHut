@@ -48,7 +48,7 @@ const int kPwmResolution = 10;
 const int kMinDutyCycle = 256;
 
 const float kLightStartTimes[8] = { 7.0f, 8.0f, 9.0f, 10.0f, 10.5f, 11.0f, 11.5f, 12.0f };
-const float kLightEndTimes[8] = { 17.0f, 17.5f, 18.0f, 18.5f, 19.0f, 20.0f, 21.0f, 22.5f };
+const float kLightEndTimes[8] = { 17.0f, 17.5f, 18.0f, 18.5f, 19.5f, 20.5f, 22.5f, 23.5f };
 const bool kLightDimmable[8] = { true, true, false, false, false, false, true, true };
 
 const int kTimeSyncIntervalSeconds = 3600;
@@ -66,7 +66,7 @@ PubSubClient mqtt_client(wifi_client);
 void log_to_influxdb(const String& line) {
   if (WiFi.status() == WL_CONNECTED) {
     Point pt("log");
-    pt.addField("data", line);
+    pt.addField("data", String("(") + device_hostname + ") " + line);
     pt.addTag("device", device_hostname);
     influxdb_client.writePoint(pt);
   }
@@ -196,6 +196,8 @@ void setup()
   // We start by connecting to a WiFi network
   WiFiMulti.addAP(kSsid, kPass);
 
+  influxdb_client.setConnectionParamsV1(kInfluxDbUrl, kInfluxDbName, kInfluxDbUser, kInfluxDbPass);
+
   ensure_connected_to_wifi();
 
   configTime(kGmtOffsetSeconds, kDaylightOffsetSeconds, kNtpServer);
@@ -230,8 +232,6 @@ void setup()
 
   ArduinoOTA.begin();
 
-  influxdb_client.setConnectionParamsV1(kInfluxDbUrl, kInfluxDbName, kInfluxDbUser, kInfluxDbPass);
-
   mqtt_client.setServer(kMqttHost, kMqttPort);
   mqtt_client.setCallback(mqtt_callback);
 
@@ -260,6 +260,7 @@ void loop() {
   }
 
   float hour = get_hour();
+  static int last_lights_on = 0;
   int lights_on = 0;
 
   for (int ledc_channel = 0; ledc_channel < 8; ++ledc_channel) {
@@ -278,6 +279,11 @@ void loop() {
       ++lights_on;
     }
     ledcWrite(ledc_channel, duty);
+  }
+
+  if (lights_on != last_lights_on) {
+    last_lights_on = lights_on;
+    log(String(lights_on) + " lights on now");
   }
 
   send_data_limiter.CallOrDrop([&]() {
