@@ -113,10 +113,25 @@ void setup()
 
 void loop() {
   // We will only be running one iteration of the loop before going into deep sleep.
+  float temp = dht_sensor.readTemperature();
+  float humidity = dht_sensor.readHumidity();
+  if (isnan(temp) || isnan(humidity)) {
+    log("DHT22 read failed. Retrying in 3 seconds");
+    delay(3000);
+    temp = dht_sensor.readTemperature();
+    humidity = dht_sensor.readHumidity();
+  }
 
-  Point pt("env");
-  pt.addField(String(zone) + "_test", 15);
-  influxdb_client.writePoint(pt);
+  if (isnan(temp) || isnan(humidity)) {
+    log("Retry failed. Not sending data");
+  } else {
+    log(String("Temp: ") + temp + "C  Humidity: " + humidity + "%");
+    Point pt("env");
+    pt.addField(String(zone) + "_temp", 15);
+    pt.addField(String(zone) + "_humidity", 15);
+    
+    influxdb_client.writePoint(pt);
+  }
 
   // Close all the things that need closing.
   influxdb_client.flushBuffer();
