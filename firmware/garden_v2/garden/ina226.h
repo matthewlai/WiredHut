@@ -25,6 +25,22 @@ class Ina226 {
     float AccumulatedChargeAh() const { return q_raw_ * current_multiplier_ / kMillisecondsInAnHour; }
     void ResetAccumulatedCharge(float new_value = 0.0f) { q_raw_ = new_value; }
 
+    // 0 => 1
+    // 1 => 4
+    // 2 => 16
+    // 3 => 64
+    // 4 => 128
+    // 5 => 256
+    // 6 => 512
+    // 7 => 1024
+    void SetSamplesToAverage(byte samples_code) {
+      auto config_reg = ReadRegister(0x00);
+      config_reg |= static_cast<uint16_t>(0x7) << 9; // 1024 samples average.
+      config_reg &= ~(0x7 << 9);
+      config_reg |= samples_code << 9;
+      WriteRegister(0x00, config_reg);
+    }
+
     void Handle() {
       if (digitalRead(alert_pin_) == LOW) {
         if (ReadRegister(0x06) & (0x1 << 3)) {
