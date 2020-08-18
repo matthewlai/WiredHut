@@ -177,9 +177,12 @@ void setup()
   pinMode(kPressureSensorGatePin, OUTPUT);
   digitalWrite(kPressureSensorGatePin, 1);
 
-  ledcSetup(kPressureSensorChargePumpLedcChannel, kPressureSensorChargePumpFrequency, 1);
-  ledcAttachPin(kPressureSensorChargePumpPin, 0);
-  ledcWrite(kPressureSensorChargePumpLedcChannel, 1);
+  digitalWrite(kPressureSensorChargePumpPin, 0);
+
+  // We don't actually need this. The sensor seems to work fine at 12V.
+  // ledcSetup(kPressureSensorChargePumpLedcChannel, kPressureSensorChargePumpFrequency, 1);
+  // ledcAttachPin(kPressureSensorChargePumpPin, 0);
+  // ledcWrite(kPressureSensorChargePumpLedcChannel, 1);
 
   influxdb_client.setConnectionParamsV1(kInfluxDbUrl, kInfluxDbName, kInfluxDbUser, kInfluxDbPass);
 
@@ -231,6 +234,11 @@ void setup()
   // This starts a background task syncing time every 60 minutes.
   configTzTime(kTimezoneString, kNtpServer);
   log(String("NTP sync complete. Local time: ") + local_time_as_string());
+
+  // 30 seconds delayed start for OTA in case we messed something up.
+  while (millis() < 30000) {
+    ArduinoOTA.handle();
+  }
 }
 
 void write_battery_stats(Ina226* sensor) {
