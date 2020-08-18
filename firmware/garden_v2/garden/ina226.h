@@ -12,7 +12,7 @@ class Ina226 {
         new_data_(false), current_multiplier_(kShuntVoltageLSB / shunt_resistance),
         q_multiplier_(kShuntVoltageLSB / shunt_resistance / kMillisecondsInAnHour){
       auto config_reg = ReadRegister(0x00);
-      config_reg |= static_cast<uint16_t>(0x4) << 9; // 128 samples average.
+      config_reg |= static_cast<uint16_t>(0x7) << 9; // 1024 samples average.
       WriteRegister(0x00, config_reg);
       WriteRegister(0x06, 0x1 << 10); // Alert on conversion ready.
     }
@@ -23,7 +23,7 @@ class Ina226 {
     float BusVoltage() const { return voltage_raw_ * kBusVoltageLSB; }
     float ShuntCurrent() const { return current_raw_ * current_multiplier_; }
     float AccumulatedChargeAh() const { return q_raw_ * current_multiplier_ / kMillisecondsInAnHour; }
-    void ResetAccumulatedCharge() { q_raw_ = 0; }
+    void ResetAccumulatedCharge(float new_value = 0.0f) { q_raw_ = new_value; }
 
     void Handle() {
       if (digitalRead(alert_pin_) == LOW) {

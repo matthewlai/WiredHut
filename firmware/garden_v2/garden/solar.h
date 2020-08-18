@@ -43,7 +43,9 @@ class Solar {
       pt.addField("panel_net_i", output_current_, 4);
       pt.addField("panel_yield_today", yield_today_, 1);
       pt.addField("panel_yield_yesterday", yield_yesterday_, 1);
-      pt.addField("panel_mode", mode_);
+      pt.addField("panel_bulk", mode_ == "Bulk");
+      pt.addField("panel_absorption", mode_ == "Absorption");
+      pt.addField("panel_float", mode_ == "Float");
       return pt;    
     }
 

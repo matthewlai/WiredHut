@@ -56,6 +56,8 @@ const int kPressureSensorChargePumpFrequency = 1000000;
 const int kPressureSensorGatePin = 12;
 const byte kPressureSensorAddress = 0x44;
 
+const float kFullBatteryCapacity = 60.0f;
+
 TwoWire I2CLocal = TwoWire(0); // I2C bus for current sensors, 400kHz.
 const int kI2cSdaPin = 33;
 const int kI2cSclPin = 32;
@@ -63,14 +65,12 @@ const int kI2cSpeed = 400000;
 const int kCurrentSensorsAlertPin = 34;
 const byte kMainBatterySensorAddress = 0x40;
 
-TwoWire I2CExt = TwoWire(1); // I2C bus for soil moisture sensor, 50kHz.
+TwoWire I2CExt = TwoWire(1); // I2C bus for external sensors at 50 kHz -
+// soil moisture sensor at 0x20.
+// air temperature/humidity sensor at 0x40.
 const int kI2cExtSdaPin = 27;
 const int kI2cExtSclPin = 26;
 const int kI2cExtSpeed = 50000;
-
-// Soft I2C bus for air sensor.
-const int kI2cAirSdaPin = 5;
-const int kI2cAirSclPin = 18;
 
 const int kUpdatePeriodMs = 5 * 1000;
 const uint32_t kMaxMqttPayloadLength = 32;
@@ -254,7 +254,7 @@ void loop() {
   static PressureSensor pressure_sensor(&pressure_current_sensor, kPressureSensorGatePin);
   static SoilMoistureSensor soil_sensor(&I2CExt);
   static WateringController watering_controller(kSw0Pin);
-  static AirSensor air_sensor(kI2cAirSdaPin, kI2cAirSclPin);
+  static AirSensor air_sensor(&I2CExt);
   
   bool have_wifi = WiFi.status() == WL_CONNECTED;
 
@@ -293,7 +293,7 @@ void loop() {
   solar_controller.Handle();
 
   if (solar_controller.IsFloating()) {
-    battery_sensor.ResetAccumulatedCharge();
+    battery_sensor.ResetAccumulatedCharge(kFullBatteryCapacity);
   }
 
   pressure_current_sensor.Handle();

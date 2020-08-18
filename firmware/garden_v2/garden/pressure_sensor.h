@@ -10,7 +10,7 @@
 class PressureSensor {
   public:
     static constexpr int kSenseIntervalMs = 30000;
-    static constexpr uint32_t kSenseDelayMs = 500;
+    static constexpr uint32_t kSenseDelayMs = 1000;
     static constexpr float kLowCurrent = 0.004f;
     static constexpr float kHighCurrent = 0.02f;
     static constexpr float kFullScalePressureHeight = 5.0f;
@@ -39,8 +39,9 @@ class PressureSensor {
     void Handle() {
       if (pending_update_) {
         if (millis() >= read_delay_end_time_) {
+          log(String("Current: ") + String(sensor_->ShuntCurrent() * 1000) + "mA");
           last_reading_ = -sensor_->ShuntCurrent();
-          digitalWrite(sw_pin_, LOW);
+          //digitalWrite(sw_pin_, LOW);
           pending_update_ = false;
           have_data_ = true;
         }
