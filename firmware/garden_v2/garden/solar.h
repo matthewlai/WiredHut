@@ -20,10 +20,7 @@ class Solar {
       : port_(port), block_index_(0), panel_voltage_(0.0f),
         panel_power_(0.0f), output_current_(0.0f), yield_today_(0.0f),
         yield_yesterday_(0.0f), error_code_(0) {
-      // Make sure we can buffer an entire block. This allows us to sleep for
-      // up to the block interval (1 second).
-      port_->setRxBufferSize(kMaxBlockSize);
-
+      port_->setRxBufferSize(kMaxBlockSize * 4);
     }
 
     void Handle();
