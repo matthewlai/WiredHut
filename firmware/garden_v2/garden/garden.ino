@@ -369,6 +369,11 @@ void loop() {
 
   CheckCallDuration([&]() { pressure_current_sensor.Handle(); }, "Pressure current sensor", 250);
   CheckCallDuration([&]() { pressure_sensor.Handle(); }, "Pressure sensor", 250);
+
+  if (pressure_sensor.HaveNewData()) {
+    watering_controller.SetWaterVolume(pressure_sensor.WaterVolume());
+  }
+  
   CheckCallDuration([&]() { soil_sensor.Handle(); }, "Soil sensor", 250);
   CheckCallDuration([&]() { air_sensor.Handle(); }, "Air sensor", 250);
   CheckCallDuration([&]() { watering_controller.Handle(); }, "Watering controller", 250);
