@@ -25,6 +25,9 @@ class Ina226 {
     float AccumulatedChargeAh() const { return q_raw_ * current_multiplier_ / kMillisecondsInAnHour; }
     void ResetAccumulatedCharge(float new_value = 0.0f) { q_raw_ = new_value; }
 
+    int64_t GetRawAccumulatedCharge() const { return q_raw_; }
+    int64_t SetRawAccumulatedCharge(int64_t new_val) { q_raw_ = new_val; }
+
     // 0 => 1
     // 1 => 4
     // 2 => 16

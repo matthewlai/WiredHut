@@ -15,15 +15,21 @@ class Solar {
     // The last field in a block will always be "Checksum"
     // So the last bytes should be "Checksum\tX", where X is the checksum.
     static constexpr char* kEndBlockMatch = "Checksum";
+
+    // This is used for both the driver's buffer and our block buffer.
+    static constexpr int kBlockBufferSize = kMaxBlockSize * 4;
     
     Solar(HardwareSerial* port)
       : port_(port), block_index_(0), panel_voltage_(0.0f),
         panel_power_(0.0f), output_current_(0.0f), yield_today_(0.0f),
-        yield_yesterday_(0.0f), error_code_(0) {
-      port_->setRxBufferSize(kMaxBlockSize * 4);
+        yield_yesterday_(0.0f), error_code_(0), new_data_(false) {
+      port_->setRxBufferSize(kBlockBufferSize);
     }
 
     void Handle();
+
+    bool HaveNewData() const { return new_data_; }
+    void ClearNewDataFlag() { new_data_ = false; }
 
     float PanelVoltage() const { return panel_voltage_; }
     float PanelPower() const { return panel_power_; }
@@ -59,7 +65,7 @@ class Solar {
     void ProcessLine(const String& line);
 
     HardwareSerial* port_;
-    byte block_buf_[kMaxBlockSize];
+    byte block_buf_[kBlockBufferSize];
     int block_index_;
 
     float panel_voltage_;
@@ -69,6 +75,7 @@ class Solar {
     float yield_yesterday_;
     int error_code_;
     String mode_;
+    bool new_data_;
 };
 
 #endif // __SOLAR_H__

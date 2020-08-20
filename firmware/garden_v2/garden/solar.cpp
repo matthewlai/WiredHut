@@ -1,10 +1,12 @@
 #include "solar.h"
 
+#include <RateLimiter.h>
+
 static const int kMaxLineLength = 32;
 
 void Solar::Handle() {
   while (port_->available()) {
-    if ((block_index_ + 1) >= kMaxBlockSize) {
+    if ((block_index_ + 1) >= kBlockBufferSize) {
       log("Solar block buffer overflow. Data dropped.");
       block_index_ = 0;
     } else {
@@ -21,10 +23,21 @@ void Solar::Handle() {
         }
       }
       if (block_ended) {
+        static uint32_t last_successful_solar_data_time = 0;
+        uint32_t now = millis();
         if (VerifyBlockChecksum()) {
+          last_successful_solar_data_time = now;
           ProcessBlock();
         } else {
-          log("Solar checksum failed. Discarding block.");
+          // The charger will occassionally send hex commands (that aren't checksummed),
+          // so we only log if we haven't gotten new solar data for 2 minutes.
+          static RateLimiter<60 * 60 * 1000, 1> error_rate_limiter;
+          uint32_t time_since_last_success = now - last_successful_solar_data_time;
+          if (time_since_last_success > (60 * 1000)) {
+            error_rate_limiter.CallOrDrop([&]() {
+              log(String("No valid solar data for: ") + (time_since_last_success / 1000 / 60) + " minute(s)");
+            });
+          }
         }
         block_index_ = 0;
       }
@@ -48,6 +61,7 @@ void Solar::ProcessBlock() {
       line[current_line_length++] = block_buf_[i];
     }
   }
+  new_data_ = true;
 }
 
 void Solar::ProcessLine(const String& line) {

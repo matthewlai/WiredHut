@@ -32,7 +32,9 @@ class SoilMoistureSensor {
       }
       update_limiter_.CallOrDrop([&]() {
         uint16_t capacitance_raw = ReadRegister(0);
+        if (HaveError()) { return; }
         int16_t temperature_raw = static_cast<int16_t>(ReadRegister(5));
+        if (HaveError()) { return; }
         
         last_reading_moisture_ = (capacitance_raw - kSoilMoistureMin) / (kSoilMoistureMax - kSoilMoistureMin) * 100.0f;
         last_reading_temperature_ = temperature_raw / 10.0f;

@@ -18,10 +18,14 @@
  */
 
 #include <ArduinoOTA.h>
+#include <EEPROM.h>
 #include <HardwareSerial.h>
+#include <Preferences.h>
 #include <time.h>
 #include <WiFi.h>
 #include <Wire.h>
+
+#include <esp_task_wdt.h>
 
 #include <DHT.h>
 #include <InfluxDbClient.h>
@@ -37,7 +41,10 @@ void log(const String& line);
 #include "pressure_sensor.h"
 #include "soil_moisture_sensor.h"
 #include "solar.h"
+#include "time_checker.h"
 #include "watering_controller.h"
+
+const int kWdtTimeoutSeconds = 60;
 
 const char* kDeviceHostname = "garden";
 const char* kEnvZone = "garden_mcu";
@@ -71,6 +78,13 @@ TwoWire I2CExt = TwoWire(1); // I2C bus for external sensors at 50 kHz -
 const int kI2cExtSdaPin = 27;
 const int kI2cExtSclPin = 26;
 const int kI2cExtSpeed = 50000;
+
+// We periodically store current battery SoC estimate in NVS (through the Preferences library),
+// and read on boot.
+// According to this: https://esp32.com/viewtopic.php?t=3990
+// There is wear-levelling on NVS, so writing every minute is plenty slow enough.
+const char* kBatterySocNvsFieldName = "battery_soc";
+const int kBatterySocEepromSaveFrequencyMs = 60 * 1000;
 
 const int kUpdatePeriodMs = 5 * 1000;
 const uint32_t kMaxMqttPayloadLength = 32;
@@ -161,6 +175,11 @@ void setup()
 {
   // We need to increase the frequency if we want to use the DHT sensor, because it can only be bit-banged at >= 160 MHz.
   setCpuFrequencyMhz(80);
+
+  // Set up WDT to reboot.
+  esp_task_wdt_init(kWdtTimeoutSeconds, true);
+  esp_task_wdt_add(NULL); // Add current thread.
+  
   delay(10);
   Serial.begin(115200);
 
@@ -256,6 +275,16 @@ void write_battery_stats(Ina226* sensor) {
 }
 
 void loop() {
+  static uint32_t last_loop_end_time = millis();
+
+  uint32_t loop_start_time = millis();
+
+  if ((loop_start_time - last_loop_end_time) > 1000) {
+    log(String("Loop start was delayed by ") + (loop_start_time - last_loop_end_time) + "ms");
+  }
+
+  esp_task_wdt_reset();
+
   static Ina226 battery_sensor(&I2CLocal, kMainBatterySensorAddress, 0.012f, kCurrentSensorsAlertPin);
   static Solar solar_controller(&solar_controller_serial);
   static Ina226 pressure_current_sensor(&I2CLocal, kPressureSensorAddress, 2.2f, kCurrentSensorsAlertPin);
@@ -263,12 +292,48 @@ void loop() {
   static SoilMoistureSensor soil_sensor(&I2CExt);
   static WateringController watering_controller(kSw0Pin);
   static AirSensor air_sensor(&I2CExt);
+
+  auto now = millis();
+
+  static Preferences preferences;
+  static bool first_iteration = true;
+
+  if (first_iteration) {
+    preferences.begin(kDeviceHostname, /*read_only=*/false);
+    // Try to read last stored battery SoC.
+    battery_sensor.SetRawAccumulatedCharge(preferences.getLong64(kBatterySocNvsFieldName, /*default=*/0));
+    first_iteration = false;
+  }
+
+  static RateLimiter<kBatterySocEepromSaveFrequencyMs, 1> battery_soc_store_limiter;
+
+  if (battery_sensor.HaveNewData()) {
+    battery_soc_store_limiter.CallOrDrop([&]() {
+      preferences.putLong64(kBatterySocNvsFieldName, battery_sensor.GetRawAccumulatedCharge());
+    });
+  }
   
   bool have_wifi = WiFi.status() == WL_CONNECTED;
+  static bool last_have_wifi = false;
+  static uint32_t lost_wifi_time = 0;
+
+  if (have_wifi && !last_have_wifi) {
+    if (lost_wifi_time == 0) {
+      log("Wifi connected");
+    } else {
+      log(String("Wifi connected (lost for ") + (now - lost_wifi_time) + "ms");
+    }
+  }
+
+  if (!have_wifi && last_have_wifi) {
+    lost_wifi_time = now;
+  }
+
+  last_have_wifi = have_wifi;
 
   if (have_wifi) {
-    ArduinoOTA.handle();
-    ensure_connected_to_mqtt();
+    CheckCallDuration([&]() { ArduinoOTA.handle(); }, "OTA Handling", 250);
+    CheckCallDuration([&]() { ensure_connected_to_mqtt(); }, "MQTT Connection", 1000);
 
     mqtt_client.setCallback([&](char* topic, byte* payload, unsigned int length) {
       char payload_cs[kMaxMqttPayloadLength + 1];
@@ -289,37 +354,33 @@ void loop() {
         log(String("Unknown topic: ") + topic);
       }
     });
-    mqtt_client.loop();
+    CheckCallDuration([&]() { mqtt_client.loop(); }, "MQTT loop", 250);
   }
 
-  auto now = millis();
   bool power_led_on = (now % 2000) < 50;
   digitalWrite(kLedPins[0], !power_led_on);
 
-  battery_sensor.Handle();
-
-  solar_controller.Handle();
+  CheckCallDuration([&]() { battery_sensor.Handle(); }, "Battery sensor", 250);
+  CheckCallDuration([&]() { solar_controller.Handle(); }, "Solar controller", 250);
 
   if (solar_controller.IsFloating()) {
     battery_sensor.ResetAccumulatedCharge(kFullBatteryCapacity);
   }
 
-  pressure_current_sensor.Handle();
+  CheckCallDuration([&]() { pressure_current_sensor.Handle(); }, "Pressure current sensor", 250);
+  CheckCallDuration([&]() { pressure_sensor.Handle(); }, "Pressure sensor", 250);
+  CheckCallDuration([&]() { soil_sensor.Handle(); }, "Soil sensor", 250);
+  CheckCallDuration([&]() { air_sensor.Handle(); }, "Air sensor", 250);
+  CheckCallDuration([&]() { watering_controller.Handle(); }, "Watering controller", 250);
 
-  pressure_sensor.Handle();
-
-  soil_sensor.Handle();
-
-  air_sensor.Handle();
-
-  watering_controller.Handle();
-
-  // This is the limiter for "cheap" updates that we want to do frequently.
   static RateLimiter<kUpdatePeriodMs, 1> update_limiter;
   update_limiter.CallOrDrop([&]() {
     write_battery_stats(&battery_sensor);
-    Point solar_point = solar_controller.MakeInfluxDbPoint();
-    influxdb_client.writePoint(solar_point);
+    if (solar_controller.HaveNewData()) {
+      Point solar_point = solar_controller.MakeInfluxDbPoint();
+      influxdb_client.writePoint(solar_point);
+      solar_controller.ClearNewDataFlag();
+    }
     if (pressure_sensor.HaveNewData()) {
       Point water_point = pressure_sensor.MakeInfluxDbPoint();
       influxdb_client.writePoint(water_point);
@@ -340,10 +401,15 @@ void loop() {
   // Flush if we added any data in this iteration.
   if (!influxdb_client.isBufferEmpty()) {
     if (have_wifi) {
-      influxdb_client.flushBuffer();
+      CheckCallDuration([&]() { influxdb_client.flushBuffer(); }, "Flush influxdb buffer", 500);
     } else {
       Serial.println(String("No WiFi, skipping InfluxDB flush. Buffer full: ") + influxdb_client.isBufferFull());
     }
+  }
+
+  last_loop_end_time = millis();
+  if ((last_loop_end_time - loop_start_time) > 1000) {
+    log(String("Loop took ") + (last_loop_end_time - loop_start_time) + "ms");
   }
 
   delay(10);
