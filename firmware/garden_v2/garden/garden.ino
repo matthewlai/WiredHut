@@ -364,7 +364,7 @@ void loop() {
   CheckCallDuration([&]() { solar_controller.Handle(); }, "Solar controller", 250);
 
   if (solar_controller.IsFloating()) {
-    battery_sensor.ResetAccumulatedCharge(kFullBatteryCapacity);
+    battery_sensor.ResetAccumulatedChargeAh(kFullBatteryCapacity);
   }
 
   CheckCallDuration([&]() { pressure_current_sensor.Handle(); }, "Pressure current sensor", 250);
