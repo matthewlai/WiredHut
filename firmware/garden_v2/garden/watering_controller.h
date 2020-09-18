@@ -11,10 +11,11 @@ class WateringController {
     static constexpr int kWaterTimeHour = 6;
     static constexpr int kWaterTimeMinute = 0;
 
-    // Water every 40 hours (once 40 hours have elapsed since last watering,
+    // Once 40 hours have elapsed since last watering,
     // the system will start watering the next time we hit the watering time
-    // of day above).
-    static constexpr int kWaterIntervalMs = 40 * 60 * 60 * 1000;
+    // of day above, if the moisture level is lower than the threshold.
+    static constexpr int kMinWaterIntervalMs = 40 * 60 * 60 * 1000;
+    static constexpr float kMoistureThreshold = 20.0f;
     static constexpr int kWaterDurationMs = 20 * 60 * 1000; // 20 minutes.
 
     // Stop watering when we have less than this much water left (so we don't
@@ -24,9 +25,9 @@ class WateringController {
     // Restart watering when we have more than this much water over kLowWaterLevel left.
     static constexpr float kRestartWateringHysteresis = 20.0f;
 
-    WateringController(int watering_control_pin)
-        : earliest_next_water_time_(0), watering_end_time_(0), watering_control_pin_(watering_control_pin),
-          water_level_high_enough_(true) {}
+    WateringController(int watering_control_pin, SoilMoistureSensor* soil_sensor)
+        : soil_sensor_(soil_sensor), earliest_next_water_time_(0), watering_end_time_(0),
+          watering_control_pin_(watering_control_pin), water_level_high_enough_(true) {}
 
     void TriggerWater() {
       watering_end_time_ = millis() + kWaterDurationMs;
@@ -34,7 +35,7 @@ class WateringController {
 
     void ResetTimer() {
       watering_end_time_ = 0;
-      earliest_next_water_time_ = millis() + kWaterIntervalMs;
+      earliest_next_water_time_ = millis() + kMinWaterIntervalMs;
     }
 
     void Handle() {
@@ -53,7 +54,7 @@ class WateringController {
       last_is_watering = is_watering;
       digitalWrite(watering_control_pin_, is_watering);
       if (is_watering) {
-        earliest_next_water_time_ = now + kWaterIntervalMs;
+        earliest_next_water_time_ = now + kMinWaterIntervalMs;
       }
       if (!is_watering && ShouldStartWatering(now)) {
         watering_end_time_ = now + kWaterDurationMs;
@@ -85,6 +86,11 @@ class WateringController {
         }
 
         if (timeinfo.tm_hour == kWaterTimeHour && timeinfo.tm_min == kWaterTimeMinute) {
+          if (soil_sensor_->LastMoistureReading() > kMoistureThreshold) {
+            log("Soil moisture level still high. Skipping watering.");
+            earliest_next_water_time_ = now + 20 * 60 * 60 * 1000;
+            return false;
+          }
           return true;
         } else {
           return false;
@@ -92,6 +98,8 @@ class WateringController {
       }
       return false;
     }
+
+    SoilMoistureSensor* soil_sensor_;
 
     uint32_t earliest_next_water_time_;
     uint32_t watering_end_time_;

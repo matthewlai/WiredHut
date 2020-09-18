@@ -9,8 +9,8 @@ class SoilMoistureSensor {
   public:
     static constexpr int kSenseIntervalMs = 30000;
     static constexpr byte kSoilSensorI2cAddress = 0x20;
-    static constexpr float kSoilMoistureMin = 200;
-    static constexpr float kSoilMoistureMax = 600;
+    static constexpr float kSoilMoistureMin = 240;
+    static constexpr float kSoilMoistureMax = 400;
     static constexpr int kRetryIntervalMs = 10 * 60 * 1000;
 
     SoilMoistureSensor(TwoWire* i2c_bus)
@@ -26,6 +26,10 @@ class SoilMoistureSensor {
     bool HaveNewData() const { return have_data_; }
     void ClearNewDataFlag() { have_data_ = false; }
 
+    float LastMoistureReading() const {
+      return last_reading_moisture_;
+    }
+
     void Handle() {
       if (millis() < error_next_retry_time_) {
         return;
@@ -35,6 +39,12 @@ class SoilMoistureSensor {
         if (HaveError()) { return; }
         int16_t temperature_raw = static_cast<int16_t>(ReadRegister(5));
         if (HaveError()) { return; }
+
+        if (capacitance_raw > kSoilMoistureMax) {
+          capacitance_raw = kSoilMoistureMax;
+        } else if (capacitance_raw < kSoilMoistureMin) {
+          capacitance_raw = kSoilMoistureMin;
+        }
         
         last_reading_moisture_ = (capacitance_raw - kSoilMoistureMin) / (kSoilMoistureMax - kSoilMoistureMin) * 100.0f;
         last_reading_temperature_ = temperature_raw / 10.0f;

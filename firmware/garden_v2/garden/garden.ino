@@ -290,7 +290,7 @@ void loop() {
   static Ina226 pressure_current_sensor(&I2CLocal, kPressureSensorAddress, 2.2f, kCurrentSensorsAlertPin);
   static PressureSensor pressure_sensor(&pressure_current_sensor, kPressureSensorGatePin);
   static SoilMoistureSensor soil_sensor(&I2CExt);
-  static WateringController watering_controller(kSw0Pin);
+  static WateringController watering_controller(kSw0Pin, &soil_sensor);
   static AirSensor air_sensor(&I2CExt);
 
   auto now = millis();
