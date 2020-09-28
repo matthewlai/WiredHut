@@ -29,14 +29,14 @@
 
 #include "credentials.h"
 
-// const char* device_hostname = "temp_workshop";
-// const char* zone = "workshop";
+//const char* device_hostname = "temp_workshop";
+//const char* zone = "workshop";
 
-//const char* device_hostname = "temp_living";
-//const char* zone = "living";
+const char* device_hostname = "temp_living";
+const char* zone = "living";
 
-const char* device_hostname = "test";
-const char* zone = "test";
+// const char* device_hostname = "test";
+// const char* zone = "test";
 
 const int kLedPins[4] = { 23, 22, 21, 19 };
 
@@ -84,9 +84,9 @@ void ensure_connected_to_wifi() {
     return;
   }
 
+  WiFi.begin(kSsid, kPass);
   Serial.println("Waiting for WiFi... ");
   do {
-    WiFi.begin(kSsid, kPass);
     Serial.print(".");
     delay(200);
   } while (WiFi.status() != WL_CONNECTED);
@@ -125,10 +125,10 @@ void loop() {
   if (isnan(temp) || isnan(humidity)) {
     log("Retry failed. Not sending data");
   } else {
-    log(String("Temp: ") + temp + "C  Humidity: " + humidity + "%");
     Point pt("env");
-    pt.addField(String(zone) + "_temp", 15);
-    pt.addField(String(zone) + "_humidity", 15);
+    Serial.println(String("Temp: ") + temp + " Humidity: " + humidity);
+    pt.addField(String(zone) + "_temp", temp);
+    pt.addField(String(zone) + "_humidity", humidity);
     
     influxdb_client.writePoint(pt);
   }
