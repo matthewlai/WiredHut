@@ -11,16 +11,16 @@ class WateringController {
     static constexpr int kWaterTimeHour = 6;
     static constexpr int kWaterTimeMinute = 0;
 
-    // Once 40 hours have elapsed since last watering,
+    // Once 60 hours have elapsed since last watering,
     // the system will start watering the next time we hit the watering time
     // of day above, if the moisture level is lower than the threshold.
-    static constexpr int kMinWaterIntervalMs = 40 * 60 * 60 * 1000;
+    static constexpr int kMinWaterIntervalMs = 60 * 60 * 60 * 1000;
     static constexpr float kMoistureThreshold = 20.0f;
-    static constexpr int kWaterDurationMs = 20 * 60 * 1000; // 20 minutes.
+    static constexpr int kWaterDurationMs = 15 * 60 * 1000; // 15 minutes.
 
     // Stop watering when we have less than this much water left (so we don't
     // burn the pump).
-    static constexpr float kLowWaterLevel = 100.0f;
+    static constexpr float kLowWaterLevel = 50.0f;
 
     // Restart watering when we have more than this much water over kLowWaterLevel left.
     static constexpr float kRestartWateringHysteresis = 20.0f;
