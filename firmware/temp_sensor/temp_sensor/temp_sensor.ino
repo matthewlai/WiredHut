@@ -19,6 +19,8 @@
 
 #include <WiFi.h>
 
+#include <esp_task_wdt.h>
+
 #include <PubSubClient.h>
 #include <InfluxDbClient.h>
 #include <DHT.h>
@@ -32,8 +34,11 @@
 //const char* device_hostname = "temp_workshop";
 //const char* zone = "workshop";
 
-const char* device_hostname = "temp_living";
-const char* zone = "living";
+//const char* device_hostname = "temp_living";
+//const char* zone = "living";
+
+const char* device_hostname = "temp_bedroom";
+const char* zone = "bedroom";
 
 // const char* device_hostname = "test";
 // const char* zone = "test";
@@ -43,6 +48,8 @@ const int kLedPins[4] = { 23, 22, 21, 19 };
 const int kDhtPin = 17;
 
 const int kReadingPeriodMs = 30 * 1000;
+
+const int kWdtTimeoutSeconds = 15;
 
 InfluxDBClient influxdb_client(kInfluxDbUrl, kInfluxDbName);
 
@@ -99,6 +106,11 @@ void setup()
 {
   Serial.begin(115200);
   delay(10);
+
+  // Set up WDT to reboot.
+  esp_task_wdt_init(kWdtTimeoutSeconds, true);
+  esp_task_wdt_add(NULL); // Add current thread.
+  esp_task_wdt_reset();
 
   for (auto led_pin : kLedPins) {
     pinMode(led_pin, OUTPUT);
