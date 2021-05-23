@@ -17,6 +17,7 @@
  * along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <esp_task_wdt.h>
 #include <WiFi.h>
 
 #include <PubSubClient.h>
@@ -29,20 +30,25 @@
 
 #include "credentials.h"
 
-// const char* device_hostname = "temp_workshop";
-// const char* zone = "workshop";
+//const char* device_hostname = "temp_workshop";
+//const char* zone = "workshop";
 
 //const char* device_hostname = "temp_living";
 //const char* zone = "living";
 
-const char* device_hostname = "test";
-const char* zone = "test";
+const char* device_hostname = "temp_bedroom";
+const char* zone = "bedroom";
+
+//const char* device_hostname = "test";
+//const char* zone = "test";
 
 const int kLedPins[4] = { 23, 22, 21, 19 };
 
 const int kDhtPin = 17;
 
 const int kReadingPeriodMs = 30 * 1000;
+
+const int kWdtTimeoutSeconds = 15;
 
 InfluxDBClient influxdb_client(kInfluxDbUrl, kInfluxDbName);
 
@@ -85,9 +91,14 @@ void ensure_connected_to_wifi() {
   }
 
   Serial.println("Waiting for WiFi... ");
+  WiFi.begin(kSsid, kPass);
+  int dot = 0;
   do {
-    WiFi.begin(kSsid, kPass);
     Serial.print(".");
+    ++dot;
+    if (dot % 200 == 0) {
+      Serial.print("\n");
+    }
     delay(200);
   } while (WiFi.status() != WL_CONNECTED);
   Serial.println("WiFi connected");
@@ -99,6 +110,9 @@ void setup()
 {
   Serial.begin(115200);
   delay(10);
+
+  esp_task_wdt_init(kWdtTimeoutSeconds, true);
+  esp_task_wdt_add(nullptr);
 
   for (auto led_pin : kLedPins) {
     pinMode(led_pin, OUTPUT);
@@ -125,10 +139,10 @@ void loop() {
   if (isnan(temp) || isnan(humidity)) {
     log("Retry failed. Not sending data");
   } else {
-    log(String("Temp: ") + temp + "C  Humidity: " + humidity + "%");
+    Serial.println(String("Temp: ") + temp + "C  Humidity: " + humidity + "%");
     Point pt("env");
-    pt.addField(String(zone) + "_temp", 15);
-    pt.addField(String(zone) + "_humidity", 15);
+    pt.addField(String(zone) + "_temp", temp);
+    pt.addField(String(zone) + "_humidity", humidity);
     
     influxdb_client.writePoint(pt);
   }
@@ -141,6 +155,7 @@ void loop() {
   // Go to sleep!
   Serial.println("Going to sleep");
   esp_sleep_enable_timer_wakeup(kReadingPeriodMs * 1000);
+  esp_task_wdt_delete(nullptr);
   esp_deep_sleep_start();
 
   // This should never be reached. Left here in case the deep sleep fails for whatever reason.
