@@ -44,6 +44,9 @@ void log(const String& line);
 #include "time_checker.h"
 #include "watering_controller.h"
 
+// We don't have one attached at the moment. Seems to be broken.
+const bool kUseSoilSensor = false;
+
 const int kWdtTimeoutSeconds = 60;
 
 const char* kDeviceHostname = "garden";
@@ -290,7 +293,7 @@ void loop() {
   static Ina226 pressure_current_sensor(&I2CLocal, kPressureSensorAddress, 2.2f, kCurrentSensorsAlertPin);
   static PressureSensor pressure_sensor(&pressure_current_sensor, kPressureSensorGatePin);
   static SoilMoistureSensor soil_sensor(&I2CExt);
-  static WateringController watering_controller(kSw0Pin, &soil_sensor);
+  static WateringController watering_controller(kSw0Pin, kUseSoilSensor ? &soil_sensor : nullptr);
   static AirSensor air_sensor(&I2CExt);
 
   auto now = millis();
@@ -373,8 +376,10 @@ void loop() {
   if (pressure_sensor.HaveNewData()) {
     watering_controller.SetWaterVolume(pressure_sensor.WaterVolume());
   }
-  
-  CheckCallDuration([&]() { soil_sensor.Handle(); }, "Soil sensor", 250);
+
+  if (kUseSoilSensor) {
+    CheckCallDuration([&]() { soil_sensor.Handle(); }, "Soil sensor", 250);
+  }
   CheckCallDuration([&]() { air_sensor.Handle(); }, "Air sensor", 250);
   CheckCallDuration([&]() { watering_controller.Handle(); }, "Watering controller", 250);
 
