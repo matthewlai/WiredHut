@@ -11,10 +11,10 @@ class WateringController {
     static constexpr int kWaterTimeHour = 6;
     static constexpr int kWaterTimeMinute = 0;
 
-    // Once 40 hours have elapsed since last watering,
+    // Once 70 hours have elapsed since last watering,
     // the system will start watering the next time we hit the watering time
-    // of day above, if the moisture level is lower than the threshold.
-    static constexpr int kMinWaterIntervalMs = 40 * 60 * 60 * 1000;
+    // of day above, if the moisture level is lower than the threshold (or soil sensor is disabled).
+    static constexpr int kMinWaterIntervalMs = 70 * 60 * 60 * 1000;
     static constexpr float kMoistureThreshold = 20.0f;
     static constexpr int kWaterDurationMs = 20 * 60 * 1000; // 20 minutes.
 
@@ -86,7 +86,7 @@ class WateringController {
         }
 
         if (timeinfo.tm_hour == kWaterTimeHour && timeinfo.tm_min == kWaterTimeMinute) {
-          if (soil_sensor_->LastMoistureReading() > kMoistureThreshold) {
+          if (soil_sensor_ && soil_sensor_->LastMoistureReading() > kMoistureThreshold) {
             log("Soil moisture level still high. Skipping watering.");
             earliest_next_water_time_ = now + 20 * 60 * 60 * 1000;
             return false;
@@ -99,6 +99,7 @@ class WateringController {
       return false;
     }
 
+    // May be nullptr if soil sensor is disabled.
     SoilMoistureSensor* soil_sensor_;
 
     uint32_t earliest_next_water_time_;
