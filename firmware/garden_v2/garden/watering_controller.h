@@ -16,11 +16,11 @@ class WateringController {
     // of day above, if the moisture level is lower than the threshold (or soil sensor is disabled).
     static constexpr int kMinWaterIntervalMs = 70 * 60 * 60 * 1000;
     static constexpr float kMoistureThreshold = 20.0f;
-    static constexpr int kWaterDurationMs = 20 * 60 * 1000; // 20 minutes.
+    static constexpr int kWaterDurationMs = 15 * 60 * 1000; // 15 minutes.
 
     // Stop watering when we have less than this much water left (so we don't
     // burn the pump).
-    static constexpr float kLowWaterLevel = 100.0f;
+    static constexpr float kLowWaterLevel = 50.0f;
 
     // Restart watering when we have more than this much water over kLowWaterLevel left.
     static constexpr float kRestartWateringHysteresis = 20.0f;

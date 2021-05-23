@@ -39,9 +39,6 @@
 const char* device_hostname = "temp_bedroom";
 const char* zone = "bedroom";
 
-//const char* device_hostname = "test";
-//const char* zone = "test";
-
 const int kLedPins[4] = { 23, 22, 21, 19 };
 
 const int kDhtPin = 17;
