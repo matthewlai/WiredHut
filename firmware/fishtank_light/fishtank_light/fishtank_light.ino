@@ -47,7 +47,7 @@ const int kPwmResolution = 10;
 // heating up the FETs.
 const int kMinDutyCycle = 256;
 
-const float kLightStartTimes[8] = { 7.0f, 8.0f, 9.0f, 10.0f, 10.5f, 11.0f, 11.5f, 12.0f };
+const float kLightStartTimes[8] = { 10.0f, 10.3f, 10.7f, 11.0f, 11.3f, 11.7f, 12.0f, 12.3f };
 const float kLightEndTimes[8] = { 17.0f, 17.5f, 18.0f, 18.5f, 19.5f, 20.5f, 22.5f, 23.5f };
 const bool kLightDimmable[8] = { true, true, false, false, false, false, true, true };
 
