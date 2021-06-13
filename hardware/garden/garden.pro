@@ -1,4 +1,4 @@
-update=17/08/2020 01:01:40
+update=14/06/2021 00:18:32
 version=1
 last_client=kicad
 [cvpcb]
@@ -25,13 +25,14 @@ MinViaDrill=0.3
 MinMicroViaDiameter=0
 MinMicroViaDrill=0
 MinHoleToHole=0.25
-TrackWidth1=0.1778
+TrackWidth1=0.2032
 TrackWidth2=0.2032
 TrackWidth3=0.3048
 TrackWidth4=0.635
 TrackWidth5=1.27
 TrackWidth6=2.54
-TrackWidth7=5.08
+TrackWidth7=3.81
+TrackWidth8=5.08
 ViaDiameter1=0.6
 ViaDrill1=0.35
 ViaDiameter2=1.016
@@ -237,7 +238,7 @@ Enabled=0
 [pcbnew/Netclasses/Default]
 Name=Default
 Clearance=0.1778
-TrackWidth=0.1778
+TrackWidth=0.2032
 ViaDiameter=0.6
 ViaDrill=0.35
 uViaDiameter=0.3
@@ -259,7 +260,7 @@ dPairViaGap=0.25
 [schematic_editor]
 version=1
 PageLayoutDescrFile=
-PlotDirectoryName=fab1/pdf/
+PlotDirectoryName=doc/
 SubpartIdSeparator=0
 SubpartFirstId=65
 NetFmtName=Pcbnew
