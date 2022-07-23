@@ -18,47 +18,37 @@
  */
 
 #include <esp_task_wdt.h>
+#include <Preferences.h>
 #include <WiFi.h>
+#include <Wire.h>
 
-#include <PubSubClient.h>
+#include "Adafruit_SHT31.h"
+
 #include <InfluxDbClient.h>
-#include <DHT.h>
 
 #include <RateLimiter.h>
 
 #include "time.h"
 
-#include "credentials.h"
-
-//const char* device_hostname = "temp_workshop";
-//const char* zone = "workshop";
-
-//const char* device_hostname = "temp_living";
-//const char* zone = "living";
-
-const char* device_hostname = "temp_bedroom";
-const char* zone = "bedroom";
-
-const int kLedPins[4] = { 23, 22, 21, 19 };
-
-const int kDhtPin = 17;
-
-const int kReadingPeriodMs = 30 * 1000;
+const int kReadingPeriodMs = 60 * 1000;
 
 const int kWdtTimeoutSeconds = 15;
 
-InfluxDBClient influxdb_client(kInfluxDbUrl, kInfluxDbName);
+const int kSensorSdaPin = 4;
+const int kSensorSclPin = 16;
+
+InfluxDBClient* influxdb_client;
 
 WiFiClient wifi_client;
-PubSubClient mqtt_client(wifi_client);
-DHT dht_sensor(kDhtPin, DHT22);
+
+Preferences* pref = nullptr;
 
 void log_to_influxdb(const String& line) {
   if (WiFi.status() == WL_CONNECTED) {
     Point pt("log");
-    pt.addField("data", String("(") + device_hostname + ") " + line);
-    pt.addTag("device", device_hostname);
-    influxdb_client.writePoint(pt);
+    pt.addField("data", String("(") + pref->getString("hostname", "") + ") " + line);
+    pt.addTag("device", pref->getString("hostname", ""));
+    influxdb_client->writePoint(pt);
   }
 }
 
@@ -88,7 +78,7 @@ void ensure_connected_to_wifi() {
   }
 
   Serial.println("Waiting for WiFi... ");
-  WiFi.begin(kSsid, kPass);
+  WiFi.begin(pref->getString("wifi_ssid", "").c_str(), pref->getString("wifi_pass", "").c_str());
   int dot = 0;
   do {
     Serial.print(".");
@@ -105,48 +95,51 @@ void ensure_connected_to_wifi() {
 
 void setup()
 {
+  setCpuFrequencyMhz(80);
   Serial.begin(115200);
   delay(10);
 
   esp_task_wdt_init(kWdtTimeoutSeconds, true);
   esp_task_wdt_add(nullptr);
 
-  for (auto led_pin : kLedPins) {
-    pinMode(led_pin, OUTPUT);
+  pref = new Preferences;
+  pref->begin("pref", /*read_only=*/true);
+  if (!pref->getBool("valid", false)) {
+    while (true) {
+      Serial.println("Preferences not initialised");
+      delay(1000);
+    }
   }
 
-  influxdb_client.setConnectionParamsV1(kInfluxDbUrl, kInfluxDbName, kInfluxDbUser, kInfluxDbPass);
+  influxdb_client = new InfluxDBClient(pref->getString("influxdb_url", "").c_str(), pref->getString("influxdb_name", "").c_str());
 
+  influxdb_client->setConnectionParamsV1(pref->getString("influxdb_url", "").c_str(),
+                                         pref->getString("influxdb_name", "").c_str(),
+                                         pref->getString("influxdb_user", "").c_str(),
+                                         pref->getString("influxdb_pass", "").c_str());
+
+  TwoWire tw(0);
+  tw.begin(kSensorSdaPin, kSensorSclPin, 400000);
+  Adafruit_SHT31 sht31 = Adafruit_SHT31(&tw);
+
+  sht31.begin();
+  
+  float temp = sht31.readTemperature();
+  float humidity = sht31.readHumidity();
+
+  Serial.println(String("Temp: ") + temp + "C  Humidity: " + humidity + "%");
+
+  // We do the reading before enabling wifi, so it's less affected by heating of the chip.
   ensure_connected_to_wifi();
-
-  dht_sensor.begin();
-}
-
-void loop() {
-  // We will only be running one iteration of the loop before going into deep sleep.
-  float temp = dht_sensor.readTemperature();
-  float humidity = dht_sensor.readHumidity();
-  if (isnan(temp) || isnan(humidity)) {
-    log("DHT22 read failed. Retrying in 3 seconds");
-    delay(3000);
-    temp = dht_sensor.readTemperature();
-    humidity = dht_sensor.readHumidity();
-  }
-
-  if (isnan(temp) || isnan(humidity)) {
-    log("Retry failed. Not sending data");
-  } else {
-    Serial.println(String("Temp: ") + temp + "C  Humidity: " + humidity + "%");
-    Point pt("env");
-    pt.addField(String(zone) + "_temp", temp);
-    pt.addField(String(zone) + "_humidity", humidity);
-    
-    influxdb_client.writePoint(pt);
-  }
+  
+  Point pt("env");
+  pt.addField(pref->getString("zone", "") + "_temp", temp);
+  pt.addField(pref->getString("zone", "") + "_humidity", humidity);
+  
+  influxdb_client->writePoint(pt);
 
   // Close all the things that need closing.
-  influxdb_client.flushBuffer();
-  mqtt_client.disconnect();
+  influxdb_client->flushBuffer();
   WiFi.disconnect();
 
   // Go to sleep!
@@ -154,7 +147,9 @@ void loop() {
   esp_sleep_enable_timer_wakeup(kReadingPeriodMs * 1000);
   esp_task_wdt_delete(nullptr);
   esp_deep_sleep_start();
+}
 
+void loop() {
   // This should never be reached. Left here in case the deep sleep fails for whatever reason.
   delay(kReadingPeriodMs);
 }

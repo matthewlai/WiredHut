@@ -26,18 +26,6 @@ F 4 "C473012" H 6400 3150 50  0001 C CNN "LCSC"
 	1    0    0    -1  
 $EndComp
 $Comp
-L Regulator_Linear:AZ1117-3.3 U1
-U 1 1 5DA730F7
-P 2600 1000
-F 0 "U1" H 2600 1242 50  0000 C CNN
-F 1 "AZ1117-3.3" H 2600 1151 50  0000 C CNN
-F 2 "Package_TO_SOT_SMD:SOT-223-3_TabPin2" H 2600 1250 50  0001 C CIN
-F 3 "https://www.diodes.com/assets/Datasheets/AZ1117.pdf" H 2600 1000 50  0001 C CNN
-F 4 "C92102" H 2600 1000 50  0001 C CNN "Field4"
-	1    2600 1000
-	1    0    0    -1  
-$EndComp
-$Comp
 L Device:C C4
 U 1 1 5DA74DB0
 P 2150 1250
@@ -50,7 +38,7 @@ F 4 "C15849" H 2150 1250 50  0001 C CNN "Field4"
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	2150 1000 2300 1000
+	2150 1000 2250 1000
 Wire Wire Line
 	2150 1000 2150 1100
 $Comp
@@ -77,8 +65,6 @@ F 3 "" H 2600 1500 50  0001 C CNN
 	1    2600 1500
 	1    0    0    -1  
 $EndComp
-Wire Wire Line
-	2600 1500 2600 1300
 Connection ~ 2150 1000
 $Comp
 L power:VBUS #PWR0106
@@ -112,18 +98,6 @@ Wire Wire Line
 	3050 900  3050 1000
 Wire Wire Line
 	3050 1000 2900 1000
-$Comp
-L Device:C C5
-U 1 1 5DA8FDAE
-P 3050 1250
-F 0 "C5" H 3165 1296 50  0000 L CNN
-F 1 "22uF" H 3165 1205 50  0000 L CNN
-F 2 "Resistor_SMD:R_0603_1608Metric" H 3088 1100 50  0001 C CNN
-F 3 "~" H 3050 1250 50  0001 C CNN
-F 4 "C59461" H 3050 1250 50  0001 C CNN "Field4"
-	1    3050 1250
-	1    0    0    -1  
-$EndComp
 $Comp
 L power:GND #PWR0110
 U 1 1 5DA90555
@@ -401,6 +375,7 @@ F 0 "J1" H 1057 3167 50  0000 C CNN
 F 1 "USB_A" H 1057 3076 50  0000 C CNN
 F 2 "usb:USB-A-XKB_U217" H 1150 2650 50  0001 C CNN
 F 3 " ~" H 1150 2650 50  0001 C CNN
+F 4 "C319178" H 1000 2700 50  0001 C CNN "LCSC"
 	1    1000 2700
 	1    0    0    -1  
 $EndComp
@@ -453,6 +428,7 @@ F 0 "U4" H 2450 2600 50  0000 C CNN
 F 1 "CH340C" H 2900 2600 50  0000 C CNN
 F 2 "Package_SO:SOIC-16_3.9x9.9mm_P1.27mm" H 2750 2600 50  0001 L CNN
 F 3 "https://datasheet.lcsc.com/szlcsc/Jiangsu-Qin-Heng-CH340C_C84681.pdf" H 2350 3950 50  0001 C CNN
+F 4 "C84681" H 2700 3150 50  0001 C CNN "LCSC"
 	1    2700 3150
 	1    0    0    -1  
 $EndComp
@@ -716,4 +692,62 @@ Wire Wire Line
 	7150 2350 7000 2350
 Wire Wire Line
 	7150 3850 7000 3850
+$Comp
+L Regulator_Linear:AP2112K-3.3 U1
+U 1 1 60F0A738
+P 2600 1100
+F 0 "U1" H 2600 1442 50  0000 C CNN
+F 1 "AP2112K-3.3" H 2600 1351 50  0000 C CNN
+F 2 "Package_TO_SOT_SMD:SOT-23-5" H 2600 1425 50  0001 C CNN
+F 3 "https://www.diodes.com/assets/Datasheets/AP2112.pdf" H 2600 1200 50  0001 C CNN
+	1    2600 1100
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	2600 1400 2600 1500
+Wire Wire Line
+	2300 1100 2250 1100
+Wire Wire Line
+	2250 1100 2250 1000
+Connection ~ 2250 1000
+Wire Wire Line
+	2250 1000 2300 1000
+$Comp
+L Jumper:SolderJumper_2_Open JP1
+U 1 1 60F568D8
+P 4750 2150
+F 0 "JP1" V 4704 2218 50  0000 L CNN
+F 1 "SolderJumper_2_Open" V 4750 1250 50  0000 L CNN
+F 2 "Jumper:SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm" H 4750 2150 50  0001 C CNN
+F 3 "~" H 4750 2150 50  0001 C CNN
+	1    4750 2150
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	5050 1950 4750 1950
+Wire Wire Line
+	4750 1950 4750 2000
+$Comp
+L power:GND #PWR0127
+U 1 1 60F5857B
+P 4750 2300
+F 0 "#PWR0127" H 4750 2050 50  0001 C CNN
+F 1 "GND" H 4755 2127 50  0000 C CNN
+F 2 "" H 4750 2300 50  0001 C CNN
+F 3 "" H 4750 2300 50  0001 C CNN
+	1    4750 2300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:C C?
+U 1 1 60F5A0A9
+P 3050 1250
+F 0 "C?" H 3165 1296 50  0000 L CNN
+F 1 "1uF" H 3165 1205 50  0000 L CNN
+F 2 "Resistor_SMD:R_0603_1608Metric" H 3088 1100 50  0001 C CNN
+F 3 "~" H 3050 1250 50  0001 C CNN
+F 4 "C15849" H 3050 1250 50  0001 C CNN "Field4"
+	1    3050 1250
+	1    0    0    -1  
+$EndComp
 $EndSCHEMATC

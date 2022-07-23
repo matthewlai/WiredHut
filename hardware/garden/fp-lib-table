@@ -134,4 +134,7 @@
   (lib (name Valve)(type KiCad)(uri ${KISYSMOD}/Valve.pretty)(options "")(descr Valve))
   (lib (name Varistor)(type KiCad)(uri ${KISYSMOD}/Varistor.pretty)(options "")(descr Varistor))
   (lib (name Switch)(type KiCad)(uri ${KIPRJMOD}/footprints/Switch)(options "")(descr ""))
+  (lib (name Inductors)(type KiCad)(uri ${KIPRJMOD}/footprints/Inductors.pretty)(options "")(descr ""))
+  (lib (name modular_blocks)(type KiCad)(uri ${KIPRJMOD}/footprints/modular_blocks.pretty)(options "")(descr ""))
+  (lib (name Antennas)(type KiCad)(uri ${KIPRJMOD}/footprints/Antennas)(options "")(descr ""))
 )

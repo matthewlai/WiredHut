@@ -1,0 +1,4 @@
+"^USB_C_Receptacle_HRO_TYPE-C-31-M-12",0
+"^Sensirion_DFN-8-1EP_2.5x2.5mm_P0.5mm_EP1.1x1.7mm",270
+"^TSOT-23-6",270
+"^JST_PH_S3B-PH-SM4",180

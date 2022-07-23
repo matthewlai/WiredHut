@@ -10,4 +10,5 @@
   (lib (name mp2451)(type Legacy)(uri ${KIPRJMOD}/library/mp2451.lib)(options "")(descr ""))
   (lib (name garden-rescue)(type Legacy)(uri ${KIPRJMOD}/garden-rescue.lib)(options "")(descr ""))
   (lib (name ap2172)(type Legacy)(uri ${KIPRJMOD}/library/ap2172.lib)(options "")(descr ""))
+  (lib (name esp32)(type Legacy)(uri ${KIPRJMOD}/library/esp32.lib)(options "")(descr ""))
 )
